@@ -85,6 +85,11 @@ Those that are mainly based on *Websockets* always contain some kind of fallback
   *Websockets* or *IMG loading* (depending on which is available) is used to find active hosts in the local network.
   *IMG loading* is also used for fingerprinting afterwards. Code for detecting css stylesheet fingerprints is also included, but their
   database contains only image fingerprints.
+- https://dunnesec.com/2013/09/16/html5-webrtc-local-ip-discovery/ (2013)
+  First the local ip is detected by this JavaScript. Based on this result the local network is scanned for active hosts.
+  The simple *IMG loading* is used for this. The author states that it works on all popular desktop operating systems (Win, OSX, Linux) with Firefox
+  and that it does not work in Chrome on Linux. In my test in Firefox on Linux it reported many false positives. 
+  In Windows it did work better, however still not 100% accurate.
 
 ### IMG Probing:
 The approach to create a HTML "img" element and set the "src" attribute to load an arbitrary URL through HTTP GET requests and measure the time
@@ -104,11 +109,6 @@ Additional information is only given when they did something special.
 
 
 ### WebRTC:
-- https://dunnesec.com/2013/09/16/html5-webrtc-local-ip-discovery/ (2013)
-  First the local ip is detected by this JavaScript. Based on this result the local network is scanned for active hosts.
-  Only *WebRTC* is used for this. The author states that it works on all popular desktop operating systems (Win, OSX, Linux) with Firefox
-  and that it does not work in Chrome on Linux. In my test in Firefox on Linux it reported many false positives. 
-  In Windows it did work better, however still not 100% accurate.
 - https://github.com/diafygi/webrtc-ips (2015)
   This script just prints the local and public ip of the client using *WebRTC*
 
