@@ -25,19 +25,28 @@
 	/* globals / instance vars, might be exposed for debugging */
 	var conn,
 		conn2,
-		config,
+		serverConfig,
+		peerConfig,
 		recvChan,
 		sendChan;
 
 
+	function iceCandidateSuccess(){
+		console.log("Successfully added ice candidate");
+	};
+
+	function iceCandidateError(err){
+		console.log("Failed adding ice candidate", err);
+	};
+
 
 	function handleCandidate(evt){
-		console.log("got candidate event");
 		if(evt.candidate){
 			var candidate = evt.candidate;
+			console.log("got candidate: ", candidate.candidate);
 			//console.log(JSON.stringify(candidate));
 			console.log(candidate);
-			conn.addIceCandidate(candidate, DBG, DBG);
+			conn.addIceCandidate(evt.candidate, iceCandidateSuccess, iceCandidateError);
 		}
 		else { /* at this state (evt.candidate == null) we are finished */
 			// TODO get end time
@@ -46,12 +55,12 @@
 	}
 
 	function handleCandidate2(evt){
-		console.log("got candidate2 event");
 		if(evt.candidate){
 			var candidate = evt.candidate;
+			console.log("got candidate2: ", candidate.candidate);
 			//console.log(JSON.stringify(candidate));
 			console.log(candidate);
-			conn2.addIceCandidate(candidate, DBG, DBG);
+			conn2.addIceCandidate(evt.candidate, iceCandidateSuccess, iceCandidateError);
 		}
 		else { /* at this state (evt.candidate == null) we are finished */
 			// TODO get end time
@@ -67,7 +76,7 @@
 	function test(){
 		console.log("starting test");
 
-		config = {
+		serverConfig = {
 			iceServers: [
 				{urls: ["stun:stun.l.google.com:19302"]} // "stun:stun.l.google.com:19302"
 			], 
@@ -75,9 +84,28 @@
 			bundlePolicy: "balanced",
 			rtcpMuxPolicy: "negotiate" // default: "require"
 		};
-		conn = new RTCPeerConnection(config, {});
-		conn.onicecandidate = handleCandidate;
+		serverConfig = null; // XXX
+		peerConfig = null;
+		
+		window.conn = conn = new RTCPeerConnection(serverConfig, peerConfig);
 
+		sendChan = conn.createDataChannel("dataChannel", null);
+		sendChan.onopen = function (event) {
+			console.log("sendChan open");
+			sendChan.send("test send msg");
+		};
+		sendChan.onclose = function (event) {
+			console.log("sendChan close");
+		};
+		sendChan.onmessage = function (event) {
+			console.log("sendChan received: " + event.data);
+		};
+		sendChan.onerror = function (err) {
+			console.log("sendChan error: ", err);
+		};
+
+		conn.onicecandidate = handleCandidate2;
+/*
 		conn.oniceconnectionstatechange = DBG;
 		conn.onidentityresult = DBG;
 		conn.onidpassertionerror = DBG;
@@ -86,11 +114,11 @@
 		conn.onpeeridentity = DBG;
 		conn.onremovestream = DBG;
 		conn.onsignalingstatechange = DBG;
+*/
 
-
-		conn2 = new RTCPeerConnection(config, {});
-		conn2.onicecandidate = handleCandidate2;
-
+		window.conn2 = conn2 = new RTCPeerConnection(serverConfig, peerConfig);
+		conn2.onicecandidate = handleCandidate;
+/*
 		conn2.oniceconnectionstatechange = DBG;
 		conn2.onidentityresult = DBG;
 		conn2.onidpassertionerror = DBG;
@@ -99,39 +127,25 @@
 		conn2.onpeeridentity = DBG;
 		conn2.onremovestream = DBG;
 		conn2.onsignalingstatechange = DBG;
-		recvChan;
+*/
 		conn2.ondatachannel = function(event){
+			console.log("Received data channel");
 			recvChan = event.channel;
 			//recvChan.binaryType = "arraybuffer";
 			recvChan.onopen = function (event) {
-				console.log("datachannel open");
+				console.log("recvChan open");
 			};
 			recvChan.onclose = function (event) {
-				console.log("datachannel close");
+				console.log("recvChan close");
 			};
 			recvChan.onmessage = function (event) {
-				console.log("received: " + event.data);
+				console.log("recvChan received: " + event.data);
 			};
-			recvChan.onerror = function (event) {
-				console.log("datachannel close");
+			recvChan.onerror = function (err) {
+				console.log("recvChan error: ", err);
 			};
 		};
 		
-
-		sendChan = conn.createDataChannel("dataChan");
-		sendChan.onopen = function (event) {
-			console.log("datachannel open");
-			sendChan.send("test send msg");
-		};
-		sendChan.onclose = function (event) {
-			console.log("datachannel close");
-		};
-		sendChan.onmessage = function (event) {
-			console.log("received: " + event.data);
-		};
-		sendChan.onerror = function (event) {
-			console.log("datachannel close");
-		};
 
 // TODO check if we can manually set/manipulate remoteDescription
 
@@ -139,21 +153,21 @@
 		conn.createOffer(function(sessionDescription){
 			// TODO measure time
 			offerDesc = sessionDescription;
-			console.log("creating offer:", JSON.stringify(sessionDescription));
-			console.log(sessionDescription);
-			conn.setLocalDescription(sessionDescription);
+			console.log("creating offer:", offerDesc.sdp);
+			console.log(offerDesc);
 
-			conn2.setRemoteDescription(sessionDescription);
+			conn.setLocalDescription(offerDesc);
+			conn2.setRemoteDescription(offerDesc);
 
 			var answerDesc;
-			conn2.createAnswer(function(sessionDescription){
+			conn2.createAnswer(function(sessionDescription2){
 				// TODO measure time
-				answerDesc = sessionDescription;
-				console.log("creating answer:", JSON.stringify(sessionDescription));
-				console.log(sessionDescription);
+				answerDesc = sessionDescription2;
+				console.log("creating answer:", answerDesc.sdp);
+				console.log(answerDesc);
 
-				conn2.setLocalDescription(sessionDescription);
-				conn.setRemoteDescription(sessionDescription);
+				conn2.setLocalDescription(answerDesc);
+				conn.setRemoteDescription(answerDesc);
 
 			},
 			function(error){
