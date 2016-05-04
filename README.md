@@ -148,3 +148,10 @@ References
 - [10]: https://webrtc.org/
 - [11]: https://tools.ietf.org/html/rfc6455
 
+not integrated yet:
+- [12]: https://webrtchacks.com/the-minimum-viable-sdp/
+- [13]: https://github.com/fippo/minimal-webrtc
+- [14]: https://github.com/WesselWessels/minisdp
+- [15]: https://webrtchacks.com/anatomy-webrtc-sdp/
+- [16]: http://tools.ietf.org/html/draft-nandakumar-rtcweb-sdp
+

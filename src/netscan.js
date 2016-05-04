@@ -23,8 +23,8 @@
 
 
 	/* globals / instance vars, might be exposed for debugging */
-	var conn,
-		conn2,
+	var connLocal,
+		connRemote,
 		serverConfig,
 		peerConfig,
 		recvChan,
@@ -33,20 +33,28 @@
 
 	function iceCandidateSuccess(){
 		console.log("Successfully added ice candidate");
-	};
+	}
 
 	function iceCandidateError(err){
 		console.log("Failed adding ice candidate", err);
-	};
+	}
 
+	function signalingStateChange(evt){
+		console.log("signaling state: ", evt.target.signalingState);
+	}
 
-	function handleCandidate(evt){
+	function iceConnectionStateChange(evt){
+		console.log("ice connection state: ", evt.target.iceConnectionState);
+	}
+
+	function handleCandidateRemote(evt){
 		if(evt.candidate){
 			var candidate = evt.candidate;
-			console.log("got candidate: ", candidate.candidate);
+			console.log("got candidate remote: ", candidate.candidate);
 			//console.log(JSON.stringify(candidate));
 			console.log(candidate);
-			conn.addIceCandidate(evt.candidate, iceCandidateSuccess, iceCandidateError);
+			/* have to add candidate to local conn */
+			connLocal.addIceCandidate(evt.candidate, iceCandidateSuccess, iceCandidateError);
 		}
 		else { /* at this state (evt.candidate == null) we are finished */
 			// TODO get end time
@@ -54,13 +62,13 @@
 		}
 	}
 
-	function handleCandidate2(evt){
+	function handleCandidateLocal(evt){
 		if(evt.candidate){
 			var candidate = evt.candidate;
-			console.log("got candidate2: ", candidate.candidate);
+			console.log("got candidate local: ", candidate.candidate);
 			//console.log(JSON.stringify(candidate));
 			console.log(candidate);
-			conn2.addIceCandidate(evt.candidate, iceCandidateSuccess, iceCandidateError);
+			connRemote.addIceCandidate(evt.candidate, iceCandidateSuccess, iceCandidateError);
 		}
 		else { /* at this state (evt.candidate == null) we are finished */
 			// TODO get end time
@@ -87,9 +95,9 @@
 		serverConfig = null; // XXX
 		peerConfig = null;
 		
-		window.conn = conn = new RTCPeerConnection(serverConfig, peerConfig);
+		connLocal = new RTCPeerConnection(serverConfig, peerConfig);
 
-		sendChan = conn.createDataChannel("dataChannel", null);
+		sendChan = connLocal.createDataChannel("dataChannel", null);
 		sendChan.onopen = function (event) {
 			console.log("sendChan open");
 			sendChan.send("test send msg");
@@ -104,31 +112,31 @@
 			console.log("sendChan error: ", err);
 		};
 
-		conn.onicecandidate = handleCandidate2;
-/*
-		conn.oniceconnectionstatechange = DBG;
-		conn.onidentityresult = DBG;
-		conn.onidpassertionerror = DBG;
-		conn.onidpvalidationerror = DBG;
-		conn.onnegotiationneeded = DBG;
-		conn.onpeeridentity = DBG;
-		conn.onremovestream = DBG;
-		conn.onsignalingstatechange = DBG;
-*/
+		connLocal.onicecandidate = handleCandidateLocal;
 
-		window.conn2 = conn2 = new RTCPeerConnection(serverConfig, peerConfig);
-		conn2.onicecandidate = handleCandidate;
-/*
-		conn2.oniceconnectionstatechange = DBG;
-		conn2.onidentityresult = DBG;
-		conn2.onidpassertionerror = DBG;
-		conn2.onidpvalidationerror = DBG;
-		conn2.onnegotiationneeded = DBG;
-		conn2.onpeeridentity = DBG;
-		conn2.onremovestream = DBG;
-		conn2.onsignalingstatechange = DBG;
-*/
-		conn2.ondatachannel = function(event){
+		connLocal.oniceconnectionstatechange = iceConnectionStateChange;
+		connLocal.onidentityresult = DBG;
+		connLocal.onidpassertionerror = DBG;
+		connLocal.onidpvalidationerror = DBG;
+		connLocal.onnegotiationneeded = DBG;
+		connLocal.onpeeridentity = DBG;
+		connLocal.onremovestream = DBG;
+		connLocal.onsignalingstatechange = signalingStateChange;
+
+
+		connRemote = new RTCPeerConnection(serverConfig, peerConfig);
+		connRemote.onicecandidate = handleCandidateRemote;
+
+		connRemote.oniceconnectionstatechange = iceConnectionStateChange;
+		connRemote.onidentityresult = DBG;
+		connRemote.onidpassertionerror = DBG;
+		connRemote.onidpvalidationerror = DBG;
+		connRemote.onnegotiationneeded = DBG;
+		connRemote.onpeeridentity = DBG;
+		connRemote.onremovestream = DBG;
+		connRemote.onsignalingstatechange = signalingStateChange;
+
+		connRemote.ondatachannel = function(event){
 			console.log("Received data channel");
 			recvChan = event.channel;
 			//recvChan.binaryType = "arraybuffer";
@@ -147,27 +155,29 @@
 		};
 		
 
-// TODO check if we can manually set/manipulate remoteDescription
-
 		var offerDesc;
-		conn.createOffer(function(sessionDescription){
+		connLocal.createOffer(function(sessionDescription){
 			// TODO measure time
 			offerDesc = sessionDescription;
 			console.log("creating offer:", offerDesc.sdp);
-			console.log(offerDesc);
+			//console.log(offerDesc);
 
-			conn.setLocalDescription(offerDesc);
-			conn2.setRemoteDescription(offerDesc);
+			connLocal.setLocalDescription(offerDesc);
+			connRemote.setRemoteDescription(offerDesc);
 
 			var answerDesc;
-			conn2.createAnswer(function(sessionDescription2){
+			connRemote.createAnswer(function(sessionDescription2){
 				// TODO measure time
 				answerDesc = sessionDescription2;
 				console.log("creating answer:", answerDesc.sdp);
-				console.log(answerDesc);
+				//console.log(answerDesc);
 
-				conn2.setLocalDescription(answerDesc);
-				conn.setRemoteDescription(answerDesc);
+
+				// TODO manipulate remoteDescription
+
+
+				connRemote.setLocalDescription(answerDesc);
+				connLocal.setRemoteDescription(answerDesc);
 
 			},
 			function(error){
@@ -181,7 +191,7 @@
 
 
 
-		//conn.addIceCandidate(new RTCIceCandidate({candidate:"candidate:0 1 UDP 2122252543 10.0.0.138 57192 typ host", sdpMLineIndex:0, sdpMid:""}), DBG, DBG);
+		//connLocal.addIceCandidate(new RTCIceCandidate({candidate:"candidate:0 1 UDP 2122252543 10.0.0.138 57192 typ host", sdpMLineIndex:0, sdpMid:""}), DBG, DBG);
 
 	}
 
