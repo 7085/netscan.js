@@ -154,4 +154,5 @@ not integrated yet:
 - [14]: https://github.com/WesselWessels/minisdp
 - [15]: https://webrtchacks.com/anatomy-webrtc-sdp/
 - [16]: http://tools.ietf.org/html/draft-nandakumar-rtcweb-sdp
+- [17]: https://webrtchacks.com/sdp-anatomy/
 

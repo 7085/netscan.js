@@ -47,6 +47,31 @@
 		return window.performance.now();
 	};
 
+	
+	/* SDP candidate line structure (a=candidate:)
+	 * 0 			1 					UDP 				2122252543 		192.168.2.108 		52229 		typ host
+	 * candidate | rtp (1)/rtcp (2) | protocol (udp/tcp) | priority 	| ip				| port		| type (host/srflx/relay)
+	 */
+	
+	function extractConnectionInfo(candidate){
+		var matches = /.+? ((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate);
+
+		if(matches === null || matches.length !== 3){
+			return null;
+		}
+
+		return {ip: matches[1], port: matches[2]};
+	}
+
+	function replaceConnectionInfo(candidate, replacement){
+		return candidate.replace(/.+? ((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/,
+			function(m, p1, p2){
+				var t = m.replace(p1, replacement.ip);
+				t = t.replace(p2, replacement.port);
+				return t;
+			});
+	}
+
 
 
 	function iceCandidateSuccess(){
@@ -71,8 +96,15 @@
 			console.log("got candidate remote: ", candidate.candidate);
 			//console.log(JSON.stringify(candidate));
 			console.log(candidate);
+			var host = extractConnectionInfo(candidate.candidate);
+			if(host !== null){
+				console.log("trying to manipulate ip", host);
+				host.ip = "192.168.2.109";
+				candidate.candidate = replaceConnectionInfo(candidate.candidate, host);
+				console.log("ip should now be different", candidate);
+			}
 			/* have to add candidate to local conn */
-			connLocal.addIceCandidate(evt.candidate, iceCandidateSuccess, iceCandidateError);
+			connLocal.addIceCandidate(candidate, iceCandidateSuccess, iceCandidateError);
 			console.log("sdp updated (local): ", connLocal.localDescription.sdp);
 		}
 		else { /* at this state (evt.candidate == null) we are finished */
