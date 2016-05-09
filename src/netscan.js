@@ -22,6 +22,7 @@
 		|| window.msRTCIceCandidate;
 
 
+
 	/* globals / instance vars, might be exposed for debugging */
 	var connLocal,
 		connRemote,
@@ -29,6 +30,23 @@
 		peerConfig,
 		recvChan,
 		sendChan;
+
+
+	function Timer(){}
+	Timer.start = function(name){
+		window.performance.mark("start_"+ name);
+	};
+	Timer.stop = function(name){
+		window.performance.mark("stop_"+ name);
+	};
+	Timer.duration = function(name){
+		window.performance.measure("dur_"+ name, "start_"+ name, "stop_"+ name);
+		return performance.getEntriesByName("dur_"+ name, "measure")[0].duration; // in ms
+	};
+	Timer.getTimestamp = function(){
+		return window.performance.now();
+	};
+
 
 
 	function iceCandidateSuccess(){
@@ -55,6 +73,7 @@
 			console.log(candidate);
 			/* have to add candidate to local conn */
 			connLocal.addIceCandidate(evt.candidate, iceCandidateSuccess, iceCandidateError);
+			console.log("sdp updated (local): ", connLocal.localDescription.sdp);
 		}
 		else { /* at this state (evt.candidate == null) we are finished */
 			// TODO get end time
@@ -69,6 +88,7 @@
 			//console.log(JSON.stringify(candidate));
 			console.log(candidate);
 			connRemote.addIceCandidate(evt.candidate, iceCandidateSuccess, iceCandidateError);
+			console.log("sdp updated (remote): ", connRemote.localDescription.sdp);
 		}
 		else { /* at this state (evt.candidate == null) we are finished */
 			// TODO get end time
@@ -92,7 +112,7 @@
 			bundlePolicy: "balanced",
 			rtcpMuxPolicy: "negotiate" // default: "require"
 		};
-		serverConfig = null; // XXX
+		//serverConfig = null; // XXX
 		peerConfig = null;
 		
 		connLocal = new RTCPeerConnection(serverConfig, peerConfig);
@@ -115,26 +135,20 @@
 		connLocal.onicecandidate = handleCandidateLocal;
 
 		connLocal.oniceconnectionstatechange = iceConnectionStateChange;
-		connLocal.onidentityresult = DBG;
-		connLocal.onidpassertionerror = DBG;
-		connLocal.onidpvalidationerror = DBG;
-		connLocal.onnegotiationneeded = DBG;
-		connLocal.onpeeridentity = DBG;
-		connLocal.onremovestream = DBG;
 		connLocal.onsignalingstatechange = signalingStateChange;
+		connLocal.onconnectionstatechange = DBG;
+		connLocal.onicecandidateerror = DBG;
+		connLocal.onicegatheringstatechange = DBG;
 
 
 		connRemote = new RTCPeerConnection(serverConfig, peerConfig);
 		connRemote.onicecandidate = handleCandidateRemote;
 
 		connRemote.oniceconnectionstatechange = iceConnectionStateChange;
-		connRemote.onidentityresult = DBG;
-		connRemote.onidpassertionerror = DBG;
-		connRemote.onidpvalidationerror = DBG;
-		connRemote.onnegotiationneeded = DBG;
-		connRemote.onpeeridentity = DBG;
-		connRemote.onremovestream = DBG;
 		connRemote.onsignalingstatechange = signalingStateChange;
+		connRemote.onconnectionstatechange = DBG;
+		connRemote.onicecandidateerror = DBG;
+		connRemote.onicegatheringstatechange = DBG;
 
 		connRemote.ondatachannel = function(event){
 			console.log("Received data channel");
