@@ -72,7 +72,12 @@
 			});
 	}
 
+	function ipToArray(ip){
+		return ip.split(".").map(Number);
+	}
 
+
+	/**********************************/
 
 	function iceCandidateSuccess(){
 		console.log("Successfully added ice candidate");
@@ -97,6 +102,13 @@
 	function sessionDescriptionError(err){
 		console.log("Failed to set session description: " + err.toString());
 	}
+
+	function DBG(e){
+		//console.log(JSON.stringify(e));
+		console.log(e);
+	};
+
+	/**********************************/
 
 	function handleRemoteCandidate(evt){
 		if(evt.candidate){
@@ -146,10 +158,6 @@
 		}
 	}
 
-	function DBG(e){
-		//console.log(JSON.stringify(e));
-		console.log(e);
-	};
 
 	function test(){
 		console.log("starting test");
@@ -203,7 +211,6 @@
 		connRemote.ondatachannel = function(event){
 			console.log("Received data channel");
 			recvChan = event.channel;
-			//recvChan.binaryType = "arraybuffer";
 			recvChan.onopen = function (event) {
 				console.log("recvChan open");
 			};
@@ -235,9 +242,6 @@
 					.then(function(answerDesc){
 						// TODO measure time
 						console.log("creating answer:", answerDesc.sdp);
-
-
-						// TODO manipulate remoteDescription
 
 						console.log("setting descriptions...");
 						connRemote.setLocalDescription(answerDesc)
