@@ -90,12 +90,20 @@
 		console.log("ice connection state: ", evt.target.iceConnectionState);
 	}
 
+	function sessionDescriptionSuccess(){
+		console.log("Successfully set session description.");
+	}
+
+	function sessionDescriptionError(err){
+		console.log("Failed to set session description: " + err.toString());
+	}
+
 	function handleRemoteCandidate(evt){
 		if(evt.candidate){
 			var candidate = evt.candidate;
 			console.log("got candidate remote: ", candidate.candidate);
-			//console.log(JSON.stringify(candidate));
 			console.log(candidate);
+
 			var host = extractConnectionInfo(candidate.candidate);
 			if(host !== null){
 				console.log("trying to manipulate ip", host);
@@ -104,8 +112,9 @@
 				console.log("ip should now be different", candidate);
 			}
 			/* have to add candidate to local conn */
-			connLocal.addIceCandidate(candidate, iceCandidateSuccess, iceCandidateError);
-			console.log("sdp updated (local): ", connLocal.localDescription.sdp);
+			connLocal.addIceCandidate(candidate)
+				.then(iceCandidateSuccess, iceCandidateError)
+				.then(() => console.log("sdp updated (local): ", connLocal.remoteDescription.sdp));
 		}
 		else { /* at this state (evt.candidate == null) we are finished */
 			// TODO get end time
@@ -117,10 +126,19 @@
 		if(evt.candidate){
 			var candidate = evt.candidate;
 			console.log("got candidate local: ", candidate.candidate);
-			//console.log(JSON.stringify(candidate));
 			console.log(candidate);
-			connRemote.addIceCandidate(evt.candidate, iceCandidateSuccess, iceCandidateError);
-			console.log("sdp updated (remote): ", connRemote.localDescription.sdp);
+
+			var host = extractConnectionInfo(candidate.candidate);
+			if(host !== null){
+				console.log("trying to manipulate ip", host);
+				host.ip = "192.168.2.109";
+				candidate.candidate = replaceConnectionInfo(candidate.candidate, host);
+				console.log("ip should now be different", candidate);
+			}
+
+			connRemote.addIceCandidate(candidate)
+				.then(iceCandidateSuccess, iceCandidateError)
+				.then(() => console.log("sdp updated (remote): ", connRemote.remoteDescription.sdp));
 		}
 		else { /* at this state (evt.candidate == null) we are finished */
 			// TODO get end time
@@ -201,39 +219,42 @@
 		};
 		
 
-		var offerDesc;
-		connLocal.createOffer(function(sessionDescription){
-			// TODO measure time
-			offerDesc = sessionDescription;
-			console.log("creating offer:", offerDesc.sdp);
-			//console.log(offerDesc);
-
-			connLocal.setLocalDescription(offerDesc);
-			connRemote.setRemoteDescription(offerDesc);
-
-			var answerDesc;
-			connRemote.createAnswer(function(sessionDescription2){
+		connLocal.createOffer()
+			.then(function(offerDesc){
 				// TODO measure time
-				answerDesc = sessionDescription2;
-				console.log("creating answer:", answerDesc.sdp);
-				//console.log(answerDesc);
+				console.log("creating offer:", offerDesc.sdp);
+
+				console.log("setting descriptions...");
+				connLocal.setLocalDescription(offerDesc)
+					.then(sessionDescriptionSuccess, sessionDescriptionError)
+					.then(() => connRemote.setRemoteDescription(offerDesc))
+					.then(sessionDescriptionSuccess, sessionDescriptionError)
+					.then(() => console.log("descriptions are now: ", connLocal.localDescription.sdp, connRemote.remoteDescription.sdp))
+
+					.then(() => connRemote.createAnswer())
+					.then(function(answerDesc){
+						// TODO measure time
+						console.log("creating answer:", answerDesc.sdp);
 
 
-				// TODO manipulate remoteDescription
+						// TODO manipulate remoteDescription
 
-
-				connRemote.setLocalDescription(answerDesc);
-				connLocal.setRemoteDescription(answerDesc);
+						console.log("setting descriptions...");
+						connRemote.setLocalDescription(answerDesc)
+							.then(sessionDescriptionSuccess, sessionDescriptionError)
+							.then(() => connLocal.setRemoteDescription(answerDesc))
+							.then(sessionDescriptionSuccess, sessionDescriptionError)
+							.then(() => console.log("descriptions are now: ", connLocal.remoteDescription.sdp, connRemote.localDescription.sdp));
+			
+					},
+					function(error){
+						console.log("Could not create answer: ", error);
+					});
 
 			},
 			function(error){
-				console.log("Could not create answer: ", error);
+				console.log("Could not create offer: ", error);
 			});
-
-		},
-		function(error){
-			console.log("Could not create offer: ", error);
-		}); //, constraints
 
 
 
