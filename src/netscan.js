@@ -49,27 +49,42 @@
 
 	
 	/* SDP candidate line structure (a=candidate:)
+	 * 1 1 UDP 1686110207  80.110.26.244 50774 typ srflx raddr 192.168.2.108 rport 50774
+	 * 2 1 UDP 25108223 	237.30.30.30 58779 typ relay raddr   47.61.61.61 rport 54761
 	 * 0 			1 					UDP 				2122252543 		192.168.2.108 		52229 		typ host
 	 * candidate | rtp (1)/rtcp (2) | protocol (udp/tcp) | priority 	| ip				| port		| type (host/srflx/relay)
 	 */
 	
 	function extractConnectionInfo(candidate){
-		var matches = /.+? ((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate);
-
-		if(matches === null || matches.length !== 3){
-			return null;
+		var host = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate);
+		if(host !== null && host.length === 3){
+			return {type: "host", ip: host[1], port: host[2], public_ip: null, public_port: null};
 		}
 
-		return {ip: matches[1], port: matches[2]};
+		var srflx = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ srflx raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate)
+		if(srflx !== null && srflx.length === 5){
+			return {type: "srflx", ip: srflx[3], port: srflx[4], public_ip: srflx[1], public_port: srflx[2]};
+		}
+
+		var relay = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ relay raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate)
+		if(relay !== null && relay.length === 5){
+			return {type: "relay", ip: relay[3], port: relay[4], public_ip: relay[1], public_port: relay[2]};
+		}
+
+		return null;
 	}
 
 	function replaceConnectionInfo(candidate, replacement){
-		return candidate.replace(/.+? ((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/,
-			function(m, p1, p2){
-				var t = m.replace(p1, replacement.ip);
-				t = t.replace(p2, replacement.port);
-				return t;
-			});
+		var m = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate)
+			|| /((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
+
+		if(m !== null){
+			var t = candidate.replace(m[1], replacement.ip);
+			t = t.replace(m[2], replacement.port);
+			return t;
+		}
+
+		return candidate;
 	}
 
 	function ipToArray(ip){
@@ -119,7 +134,7 @@
 			var host = extractConnectionInfo(candidate.candidate);
 			if(host !== null){
 				console.log("trying to manipulate ip", host);
-				host.ip = "192.168.2.109";
+				host.ip = "192.168.2.108";
 				candidate.candidate = replaceConnectionInfo(candidate.candidate, host);
 				console.log("ip should now be different", candidate);
 			}
@@ -143,7 +158,7 @@
 			var host = extractConnectionInfo(candidate.candidate);
 			if(host !== null){
 				console.log("trying to manipulate ip", host);
-				host.ip = "192.168.2.109";
+				host.ip = "192.168.2.106";
 				candidate.candidate = replaceConnectionInfo(candidate.candidate, host);
 				console.log("ip should now be different", candidate);
 			}
