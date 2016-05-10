@@ -90,7 +90,7 @@
 		console.log("ice connection state: ", evt.target.iceConnectionState);
 	}
 
-	function handleCandidateRemote(evt){
+	function handleRemoteCandidate(evt){
 		if(evt.candidate){
 			var candidate = evt.candidate;
 			console.log("got candidate remote: ", candidate.candidate);
@@ -113,7 +113,7 @@
 		}
 	}
 
-	function handleCandidateLocal(evt){
+	function handleLocalCandidate(evt){
 		if(evt.candidate){
 			var candidate = evt.candidate;
 			console.log("got candidate local: ", candidate.candidate);
@@ -164,7 +164,7 @@
 			console.log("sendChan error: ", err);
 		};
 
-		connLocal.onicecandidate = handleCandidateLocal;
+		connLocal.onicecandidate = handleLocalCandidate;
 
 		connLocal.oniceconnectionstatechange = iceConnectionStateChange;
 		connLocal.onsignalingstatechange = signalingStateChange;
@@ -174,7 +174,7 @@
 
 
 		connRemote = new RTCPeerConnection(serverConfig, peerConfig);
-		connRemote.onicecandidate = handleCandidateRemote;
+		connRemote.onicecandidate = handleRemoteCandidate;
 
 		connRemote.oniceconnectionstatechange = iceConnectionStateChange;
 		connRemote.onsignalingstatechange = signalingStateChange;
