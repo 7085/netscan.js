@@ -1,8 +1,10 @@
 
-(function () {
+var NetScan = (function () {
 	"use strict";
 
-	console.log("setting up browser compatibility");
+	/* temp object for export */
+	var T = {};
+
 	/* compatibility: see https://developer.mozilla.org/de/docs/Web/API/RTCPeerConnection */
 	var RTCPeerConnection = window.RTCPeerConnection 
 		|| window.mozRTCPeerConnection 
@@ -22,32 +24,36 @@
 		|| window.msRTCIceCandidate;
 
 
-
-	/* globals / instance vars, might be exposed for debugging */
-	var connLocal,
-		connRemote,
-		serverConfig,
-		peerConfig,
-		recvChan,
-		sendChan;
-
+	/****************************/
 
 	function Timer(){}
+
 	Timer.start = function(name){
 		window.performance.mark("start_"+ name);
 	};
+
 	Timer.stop = function(name){
 		window.performance.mark("stop_"+ name);
 	};
+
 	Timer.duration = function(name){
 		window.performance.measure("dur_"+ name, "start_"+ name, "stop_"+ name);
 		return performance.getEntriesByName("dur_"+ name, "measure")[0].duration; // in ms
 	};
+
+	Timer.durationInSec = function(name){
+		return (Timer.duration(name) / 1000).toFixed(3);
+	};
+
 	Timer.getTimestamp = function(){
 		return window.performance.now();
 	};
 
+	T.Timer = Timer;
+
 	
+
+	/****************************/
 	/* SDP candidate line structure (a=candidate:)
 	 * 1 1 UDP 1686110207  80.110.26.244 50774 typ srflx raddr 192.168.2.108 rport 50774
 	 * 2 1 UDP 25108223 	237.30.30.30 58779 typ relay raddr   47.61.61.61 rport 54761
@@ -55,7 +61,9 @@
 	 * candidate | rtp (1)/rtcp (2) | protocol (udp/tcp) | priority 	| ip				| port		| type (host/srflx/relay)
 	 */
 	
-	function extractConnectionInfo(candidate){
+	function Util(){};
+
+	Util.extractConnectionInfo = function(candidate){
 		var host = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate);
 		if(host !== null && host.length === 3){
 			return {type: "host", ip: host[1], port: host[2], public_ip: null, public_port: null};
@@ -72,9 +80,9 @@
 		}
 
 		return null;
-	}
+	};
 
-	function replaceConnectionInfo(candidate, replacement){
+	Util.replaceConnectionInfo = function(candidate, replacement){
 		var m = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate)
 			|| /((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
 
@@ -85,14 +93,79 @@
 		}
 
 		return candidate;
-	}
+	};
 
-	function ipToArray(ip){
+	Util.ipToArray = function(ip){
 		return ip.split(".").map(Number);
-	}
+	};
+	
+	T.Util = Util;
 
 
 	/**********************************/
+
+	function Scan(){};
+
+	Scan.getIps = function(cb){
+		Timer.start("getIps");
+		var ips = [];
+
+		var serverConfig = {
+			iceServers: [
+				{urls: ["stun:stun.l.google.com:19302"]}
+			]
+		};
+
+		var conn = new RTCPeerConnection(serverConfig, null);
+		var sendChan = conn.createDataChannel("netscan", null);
+
+		conn.onicecandidate = function(evt){
+			if(evt.candidate){
+				var candidate = evt.candidate;
+				console.log("Got candidate:", candidate.candidate);
+
+				var host = Util.extractConnectionInfo(candidate.candidate);
+				if(host !== null){
+					ips.push(host);
+				}
+			}
+			else { /* at this state (evt.candidate == null) we are finished */
+				Timer.stop("getIps");
+				cb(ips);
+				sendChan.close();
+				conn.close();
+				sendChan = null;
+				conn = null;
+			}
+		};
+
+		conn.createOffer()
+			.then(function(offerDesc){
+				//console.log("Creating offer:", offerDesc.sdp);
+				conn.setLocalDescription(offerDesc);
+			},
+			function(error){/* dont care */});
+
+	};
+
+	Scan.getHostsLocalNetwork = function(cb){};
+
+	Scan.getHostsReachable = function(cb){};
+
+	Scan.getPorts = function(host, cb){};
+
+	T.Scan = Scan;
+
+	/**********************************/
+
+
+	/* globals / instance vars, might be exposed for debugging */
+	var connLocal,
+		connRemote,
+		serverConfig,
+		peerConfig,
+		recvChan,
+		sendChan;
 
 	function iceCandidateSuccess(){
 		console.log("Successfully added ice candidate");
@@ -123,7 +196,6 @@
 		console.log(e);
 	};
 
-	/**********************************/
 
 	function handleRemoteCandidate(evt){
 		if(evt.candidate){
@@ -131,11 +203,11 @@
 			console.log("got candidate remote: ", candidate.candidate);
 			console.log(candidate);
 
-			var host = extractConnectionInfo(candidate.candidate);
+			var host = Util.extractConnectionInfo(candidate.candidate);
 			if(host !== null){
 				console.log("trying to manipulate ip", host);
 				host.ip = "192.168.2.108";
-				candidate.candidate = replaceConnectionInfo(candidate.candidate, host);
+				candidate.candidate = Util.replaceConnectionInfo(candidate.candidate, host);
 				console.log("ip should now be different", candidate);
 			}
 			/* have to add candidate to local conn */
@@ -155,11 +227,11 @@
 			console.log("got candidate local: ", candidate.candidate);
 			console.log(candidate);
 
-			var host = extractConnectionInfo(candidate.candidate);
+			var host = Util.extractConnectionInfo(candidate.candidate);
 			if(host !== null){
 				console.log("trying to manipulate ip", host);
 				host.ip = "192.168.2.106";
-				candidate.candidate = replaceConnectionInfo(candidate.candidate, host);
+				candidate.candidate = Util.replaceConnectionInfo(candidate.candidate, host);
 				console.log("ip should now be different", candidate);
 			}
 
@@ -174,7 +246,7 @@
 	}
 
 
-	function test(){
+	T.test = function (){
 		console.log("starting test");
 
 		serverConfig = {
@@ -281,5 +353,6 @@
 
 	}
 
-	test();
+
+	return T;
 }());

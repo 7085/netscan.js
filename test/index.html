@@ -8,5 +8,8 @@
 	<body>
 	html stub for testing
 	<script src="../src/netscan.js"></script>
+	<script>
+		NetScan.Scan.getIps(ips => console.log(NetScan.Timer.durationInSec("getIps"), JSON.stringify(ips)));
+	</script>
 	</body>
 </html> 
