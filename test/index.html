@@ -10,6 +10,8 @@
 	<script src="../src/netscan.js"></script>
 	<script>
 		NetScan.Scan.getIps(ips => console.log(NetScan.Timer.durationInSec("getIps"), JSON.stringify(ips)));
+		
+		NetScan.Scan.getHostStatusWS("192.168.2.108");
 	</script>
 	</body>
 </html> 

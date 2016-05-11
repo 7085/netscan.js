@@ -148,9 +148,23 @@ var NetScan = (function () {
 
 	};
 
+	Scan.getHostStatusWS = function(ip, cb){
+		var ws = new WebSocket("ws://"+ ip);
+		ws.onopen = function(evt){console.log(evt)};
+		ws.onclose = function(/*CloseEvent*/ evt){console.log(evt)};
+		ws.onerror = function(evt){console.log(evt)};
+		ws.onmessage = function(/*MessageEvent*/ evt){console.log(evt)};
+	};
+	
+	Scan.getHostStatusXHR = function(ip, cb){};
+
+	Scan.getHosts = function(iprange, cb){};
+
 	Scan.getHostsLocalNetwork = function(cb){};
 
 	Scan.getHostsReachable = function(cb){};
+
+	Scan.getPortStatus = function(host, port, cb){};
 
 	Scan.getPorts = function(host, cb){};
 
