@@ -45,8 +45,17 @@ var NetScan = (function () {
 		return (Timer.duration(name) / 1000).toFixed(3);
 	};
 
+	Timer.durationDiff = function(startName, stopName){
+		window.performance.measure("dur_"+ startName + stopName, "start_"+ startName, "stop_"+ stopName);
+		return performance.getEntriesByName("dur_"+ startName + stopName, "measure")[0].duration; // in ms
+	};
+
+	Timer.durationDiffInSec = function(startName, stopName){
+		return (Timer.durationDiff(startName, stopName) / 1000).toFixed(3);
+	};
+
 	Timer.getTimestamp = function(){
-		return window.performance.now();
+		return window.performance.now(); // in micro-seconds
 	};
 
 	T.Timer = Timer;
@@ -149,14 +158,57 @@ var NetScan = (function () {
 	};
 
 	Scan.getHostStatusWS = function(ip, cb){
+		var startTime = Timer.getTimestamp(),
+			openTime = 0,
+			closeTime = 0,
+			errorTime = 0,
+			messageTime = 0;
+
+
 		var ws = new WebSocket("ws://"+ ip);
-		ws.onopen = function(evt){console.log(evt)};
-		ws.onclose = function(/*CloseEvent*/ evt){console.log(evt)};
-		ws.onerror = function(evt){console.log(evt)};
-		ws.onmessage = function(/*MessageEvent*/ evt){console.log(evt)};
+		var wsResult = false;
+
+		ws.onopen = function(evt){
+			openTime = Timer.getTimestamp();
+			console.log(evt);
+			onresult(ip, "up", openTime - startTime);
+		};
+
+		ws.onclose = function(/*CloseEvent*/ evt){
+			closeTime = Timer.getTimestamp();
+			console.log(evt);
+			onresult(ip, "down", closeTime - startTime);
+		};
+
+		ws.onerror = function(evt){
+			errorTime = Timer.getTimestamp();
+			console.log(evt);
+			if(errorTime - startTime < 10000){
+				onresult(ip, "up", errorTime - startTime);
+			}
+			else {
+				onresult(ip, "down", errorTime - startTime);
+			}
+		};
+		
+		//ws.onmessage = function(/*MessageEvent*/ evt){
+		//	messageTime = Timer.getTimestamp();
+		//	console.log(evt);
+		//};
+		
+		function onresult(ip, status, time){
+			if(!wsResult){
+				wsResult = true
+				cb({ip: ip, status: status, time: errorTime - startTime});
+				ws.close();
+				ws = null;
+			}
+		}
 	};
 	
-	Scan.getHostStatusXHR = function(ip, cb){};
+	Scan.getHostStatusXHR = function(ip, cb){
+		// TODO use resource timing api
+	};
 
 	Scan.getHosts = function(iprange, cb){};
 
