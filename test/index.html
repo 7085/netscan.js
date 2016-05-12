@@ -11,12 +11,16 @@
 	<script>
 		NetScan.Scan.getIps(ips => console.log(NetScan.Timer.durationInSec("getIps"), JSON.stringify(ips)));
 		
-		NetScan.Scan.getHostStatusWS("192.168.2.108");
+		//NetScan.Scan.getHostStatusWS("192.168.2.108");
 
+/*
 		var res = [];
 		for(var i = 0, n = 255; i < n; i++){
 			NetScan.Scan.getHostStatusWS("192.168.2."+ i, (s) => res.push(s));
 		}
+*/
+
+		NetScan.Scan.getHosts("128.130.240.0-255", (r) => console.log(r));
 	</script>
 	</body>
 </html> 

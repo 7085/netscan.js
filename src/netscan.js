@@ -107,6 +107,32 @@ var NetScan = (function () {
 	Util.ipToArray = function(ip){
 		return ip.split(".").map(Number);
 	};
+
+	Util.ipRangeToArray = function(iprange){
+		var ranges = [];
+		iprange.split(".").map(function(elem){
+			if(elem.indexOf("-") !== -1){
+				ranges.push(elem.split("-").map(Number))
+			}
+			else {
+				var n = Number(elem);
+				ranges.push([n, n]);
+			}
+		});
+
+		var ips = [];
+		for(var i = ranges[0][0]; i <= ranges[0][1]; i++){
+			for(var j = ranges[1][0]; j <= ranges[1][1]; j++){
+				for(var k = ranges[2][0]; k <= ranges[2][1]; k++){
+					for(var l = ranges[3][0]; l <= ranges[3][1]; l++){
+						ips.push([i,j,k,l].join("."));
+					}			
+				}			
+			}			
+		}
+
+		return ips;
+	};
 	
 	T.Util = Util;
 
@@ -164,7 +190,6 @@ var NetScan = (function () {
 			errorTime = 0,
 			messageTime = 0;
 
-
 		var ws = new WebSocket("ws://"+ ip);
 		var wsResult = false;
 
@@ -198,8 +223,8 @@ var NetScan = (function () {
 		
 		function onresult(ip, status, time){
 			if(!wsResult){
-				wsResult = true
-				cb({ip: ip, status: status, time: errorTime - startTime});
+				wsResult = true;
+				cb({ip: ip, status: status, time: time});
 				ws.close();
 				ws = null;
 			}
@@ -210,7 +235,69 @@ var NetScan = (function () {
 		// TODO use resource timing api
 	};
 
-	Scan.getHosts = function(iprange, cb){};
+	Scan.getHosts = function(iprange, cb){
+		/* create a connection pool, browsers only support a certain limit of
+		 * simultaneous connections */	
+		var poolCap = 50;	
+		var socketPool = [];
+		var results = [];
+		var ips = Util.ipRangeToArray(iprange);
+		//Scan.cb = cb; // XXX
+
+		/* initially fill pool */
+		for(var i = 0; i < poolCap && ips.length > 0; i++){
+			createConnection(ips.shift());			
+		}
+
+		/* then regularly check if there is space for new conns */
+		var poolMonitor = setInterval(function(){
+			if(ips.length < 1 && socketPool.length === 0){
+				clearInterval(poolMonitor);
+				cb(results);
+			}
+
+			for(; socketPool.length < poolCap && ips.length > 0; i++){
+				createConnection(ips.shift());			
+			}
+		}, 50);
+
+		/* helper for creating a single connection */
+		function createConnection(ip){
+			var startTime = Timer.getTimestamp();
+			var ws = new WebSocket("ws://"+ ip);
+			var wsResult = false;
+
+			ws.onopen = function(evt){
+				onresult(ip, "up", Timer.getTimestamp() - startTime);
+			};
+
+			ws.onclose = function(/*CloseEvent*/ evt){
+				onresult(ip, "down", Timer.getTimestamp() - startTime);
+			};
+
+			ws.onerror = function(evt){
+				if(Timer.getTimestamp() - startTime < 10000){
+					onresult(ip, "up", Timer.getTimestamp() - startTime);
+				}
+				else {
+					onresult(ip, "down", Timer.getTimestamp() - startTime);
+				}
+			};
+
+			socketPool.push(ws);
+		
+			function onresult(ip, status, time){
+				if(!wsResult){
+					wsResult = true;
+					results.push({ip: ip, status: status, time: time});
+					
+					socketPool.splice(socketPool.indexOf(ws), 1);
+					ws.close();
+					ws = null;
+				}
+			}
+		}
+	};
 
 	Scan.getHostsLocalNetwork = function(cb){};
 
