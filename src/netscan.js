@@ -187,27 +187,23 @@ var NetScan = (function () {
 		var startTime = Timer.getTimestamp(),
 			openTime = 0,
 			closeTime = 0,
-			errorTime = 0,
-			messageTime = 0;
+			errorTime = 0;
 
 		var ws = new WebSocket("ws://"+ ip);
 		var wsResult = false;
 
 		ws.onopen = function(evt){
 			openTime = Timer.getTimestamp();
-			console.log(evt);
 			onresult(ip, "up", openTime - startTime);
 		};
 
 		ws.onclose = function(/*CloseEvent*/ evt){
 			closeTime = Timer.getTimestamp();
-			console.log(evt);
 			onresult(ip, "down", closeTime - startTime);
 		};
 
 		ws.onerror = function(evt){
 			errorTime = Timer.getTimestamp();
-			console.log(evt);
 			if(errorTime - startTime < 10000){
 				onresult(ip, "up", errorTime - startTime);
 			}
@@ -215,11 +211,6 @@ var NetScan = (function () {
 				onresult(ip, "down", errorTime - startTime);
 			}
 		};
-		
-		//ws.onmessage = function(/*MessageEvent*/ evt){
-		//	messageTime = Timer.getTimestamp();
-		//	console.log(evt);
-		//};
 		
 		function onresult(ip, status, time){
 			if(!wsResult){
@@ -252,7 +243,10 @@ var NetScan = (function () {
 		/* then regularly check if there is space for new conns */
 		var poolMonitor = setInterval(function(){
 			if(ips.length < 1 && socketPool.length === 0){
+				/* finished */
 				clearInterval(poolMonitor);
+				// TODO add/merge/compare results of perf resource timing api
+				
 				cb(results);
 			}
 
@@ -276,7 +270,7 @@ var NetScan = (function () {
 			};
 
 			ws.onerror = function(evt){
-				if(Timer.getTimestamp() - startTime < 10000){
+				if(Timer.getTimestamp() - startTime < 1000){
 					onresult(ip, "up", Timer.getTimestamp() - startTime);
 				}
 				else {
