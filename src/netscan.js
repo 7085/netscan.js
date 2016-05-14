@@ -133,6 +133,18 @@ var NetScan = (function () {
 
 		return ips;
 	};
+
+	Util.isPrivateIp = function(ip){
+		if(typeof ip === "string"){
+			ip = Util.ipToArray(ip);
+		}
+
+		if(ip[0] === 10
+		||(ip[0] === 172 && ip[1] >= 16 && ip[1] <= 31)
+		||(ip[0] === 192 && ip[1] === 168)){
+			return true;
+		}
+	};
 	
 	T.Util = Util;
 
@@ -233,7 +245,6 @@ var NetScan = (function () {
 		var socketPool = [];
 		var results = [];
 		var ips = Util.ipRangeToArray(iprange);
-		//Scan.cb = cb; // XXX
 
 		/* initially fill pool */
 		for(var i = 0; i < poolCap && ips.length > 0; i++){
@@ -270,13 +281,16 @@ var NetScan = (function () {
 			};
 
 			ws.onerror = function(evt){
-				if(Timer.getTimestamp() - startTime < 1000){
+				var timing = Timer.getTimestamp() - startTime;
+				if(timing < 1000 || timing > 5000){
 					onresult(ip, "up", Timer.getTimestamp() - startTime);
 				}
 				else {
 					onresult(ip, "down", Timer.getTimestamp() - startTime);
 				}
 			};
+
+			// TODO: evaluate if an additional timeout improves scan time, while not wasting result accuracy
 
 			socketPool.push(ws);
 		
