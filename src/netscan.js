@@ -153,6 +153,9 @@ var NetScan = (function () {
 
 	function Scan(){};
 
+	Scan.socketPool = [];
+	Scan.poolCap = 50;
+
 	Scan.getIps = function(cb){
 		Timer.start("getIps");
 		var ips = [];
@@ -167,7 +170,7 @@ var NetScan = (function () {
 		var sendChan = conn.createDataChannel("netscan", null);
 
 		conn.onicecandidate = function(evt){
-			if(evt.candidate){
+			if(evt.candidate !== null){
 				var candidate = evt.candidate;
 				console.log("Got candidate:", candidate.candidate);
 
@@ -176,7 +179,9 @@ var NetScan = (function () {
 					ips.push(host);
 				}
 			}
-			else { /* at this state (evt.candidate == null) we are finished */
+			/* at this state (evt.candidate == null) we are finished, see:
+			 * https://developer.mozilla.org/de/docs/Web/API/RTCPeerConnection/onicecandidate */
+			else { 
 				Timer.stop("getIps");
 				cb(ips);
 				sendChan.close();
@@ -194,66 +199,27 @@ var NetScan = (function () {
 			function(error){/* dont care */});
 
 	};
-
-	Scan.getHostStatusWS = function(ip, cb){
-		var startTime = Timer.getTimestamp(),
-			openTime = 0,
-			closeTime = 0,
-			errorTime = 0;
-
-		var ws = new WebSocket("ws://"+ ip);
-		var wsResult = false;
-
-		ws.onopen = function(evt){
-			openTime = Timer.getTimestamp();
-			onresult(ip, "up", openTime - startTime);
-		};
-
-		ws.onclose = function(/*CloseEvent*/ evt){
-			closeTime = Timer.getTimestamp();
-			onresult(ip, "down", closeTime - startTime);
-		};
-
-		ws.onerror = function(evt){
-			errorTime = Timer.getTimestamp();
-			if(errorTime - startTime < 10000){
-				onresult(ip, "up", errorTime - startTime);
-			}
-			else {
-				onresult(ip, "down", errorTime - startTime);
-			}
-		};
-		
-		function onresult(ip, status, time){
-			if(!wsResult){
-				wsResult = true;
-				cb({ip: ip, status: status, time: time});
-				ws.close();
-				ws = null;
-			}
-		}
-	};
 	
-	Scan.getHostStatusXHR = function(ip, cb){
+	Scan.getHostsXHR = function(iprange, cb){
 		// TODO use resource timing api
 	};
 
-	Scan.getHosts = function(iprange, cb){
+	Scan.getHostsWS = function(iprange, cb){
 		/* create a connection pool, browsers only support a certain limit of
 		 * simultaneous connections */	
-		var poolCap = 50;	
-		var socketPool = [];
+		//var poolCap = 50;	
+		//var socketPool = [];
 		var results = [];
 		var ips = Util.ipRangeToArray(iprange);
 
 		/* initially fill pool */
-		for(var i = 0; i < poolCap && ips.length > 0; i++){
+		for(var i = 0; i < Scan.poolCap && ips.length > 0; i++){
 			createConnection(ips.shift());			
 		}
 
 		/* then regularly check if there is space for new conns */
 		var poolMonitor = setInterval(function(){
-			if(ips.length < 1 && socketPool.length === 0){
+			if(ips.length < 1 && Scan.socketPool.length === 0){
 				/* finished */
 				clearInterval(poolMonitor);
 				// TODO add/merge/compare results of perf resource timing api
@@ -261,12 +227,12 @@ var NetScan = (function () {
 				cb(results);
 			}
 
-			for(; socketPool.length < poolCap && ips.length > 0; i++){
+			for(; Scan.socketPool.length < Scan.poolCap && ips.length > 0; i++){
 				createConnection(ips.shift());			
 			}
 		}, 50);
 
-		/* helper for creating a single connection */
+		/* create a single connection */
 		function createConnection(ip){
 			var startTime = Timer.getTimestamp();
 			var ws = new WebSocket("ws://"+ ip);
@@ -292,14 +258,16 @@ var NetScan = (function () {
 
 			// TODO: evaluate if an additional timeout improves scan time, while not wasting result accuracy
 
-			socketPool.push(ws);
+			// TODO: handle blocking of http authentication
+
+			Scan.socketPool.push(ws);
 		
 			function onresult(ip, status, time){
 				if(!wsResult){
 					wsResult = true;
 					results.push({ip: ip, status: status, time: time});
 					
-					socketPool.splice(socketPool.indexOf(ws), 1);
+					Scan.socketPool.splice(Scan.socketPool.indexOf(ws), 1);
 					ws.close();
 					ws = null;
 				}
@@ -307,7 +275,27 @@ var NetScan = (function () {
 		}
 	};
 
-	Scan.getHostsLocalNetwork = function(cb){};
+	Scan.getHostsLocalNetwork = function(cb){
+		Scan.getIps(function(ips){
+			var toTest = {};
+
+			for(var i = 0; i < ips.length; i++){
+				if(toTest[ips[i].ip] === undefined){
+					toTest[ips[i].ip] = true;
+				}
+			}
+
+			var all = [];
+			for(var ip in toTest){
+				var tip = Util.ipToArray(ip);
+				tip[3] = "0-255";
+				tip = tip.join(".");
+				Scan.getHostsWS(best, function(res){
+					all = all.concat(res);
+				});
+			}
+		});
+	};
 
 	Scan.getHostsReachable = function(cb){};
 

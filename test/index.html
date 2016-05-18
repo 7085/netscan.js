@@ -19,20 +19,28 @@
 	<body>
 	<script src="../src/netscan.js"></script>
 	<script>
-		NetScan.Scan.getIps(ips => console.log(NetScan.Timer.durationInSec("getIps"), JSON.stringify(ips)));
-		
-		//NetScan.Scan.getHostStatusWS("192.168.2.108", (r) => console.log(r));
+		function list(r) {
+			var upList = document.getElementById("up");
+			var downList = document.getElementById("down");
 
-/*
-		var res = [];
-		for(var i = 0, n = 255; i < n; i++){
-			NetScan.Scan.getHostStatusWS("192.168.2."+ i, (s) => res.push(s));
+			r.sort((a,b) => {return a.time - b.time});
+			
+			for(var i = 0; i < r.length; i++){
+				if(r[i].status === "up"){
+					upList.insertAdjacentHTML("beforeend", "<li>"+ r[i].ip +" <span style=\"color:#ccc\">"+ r[i].time.toFixed(2) +"</span></li>");
+				}
+				else {
+					downList.insertAdjacentHTML("beforeend", "<li>"+ r[i].ip +" <span style=\"color:#ccc\">"+ r[i].time.toFixed(2) +"</span></li>");
+				}
+			}
 		}
-*/
 
-		//NetScan.Scan.getHosts("128.130.240.0-255", (r) => console.log(r));
-		//NetScan.Scan.getHosts("192.168.2.0-25", (r) => {
-		NetScan.Scan.getHosts("10.0.0.0-255", (r) => {
+		NetScan.Scan.getIps(ips => {console.log(NetScan.Timer.durationInSec("getIps"), JSON.stringify(ips))});
+		
+/*
+		//NetScan.Scan.getHostsWS("128.130.240.0-255", (r) => console.log(r));
+		//NetScan.Scan.getHostsWS("192.168.2.0-25", (r) => {
+		NetScan.Scan.getHostsWS("10.0.0.0-255", (r) => {
 			var upList = document.getElementById("up");
 			var downList = document.getElementById("down");
 
@@ -47,7 +55,8 @@
 				}
 			}
 		});
-
+*/
+		NetScan.Scan.getHostsLocalNetwork(list);
 		
 	</script>
 
