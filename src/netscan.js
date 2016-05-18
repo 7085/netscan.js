@@ -195,13 +195,23 @@ var NetScan = (function () {
 			}
 		};
 
-		conn.createOffer()
-			.then(function(offerDesc){
-				//console.log("Creating offer:", offerDesc.sdp);
-				conn.setLocalDescription(offerDesc);
-			},
-			function(error){/* dont care */});
+		try {
+			conn.createOffer()
+				.then(function(offerDesc){
+					conn.setLocalDescription(offerDesc);
+				},
+				function(error){/* dont care */});
+		} 
+		catch(/* TypeError */ error){
 
+			/* Fallback for older version of createOffer which requires 
+			 * two callbacks instead of the newer Promise which will be returned */
+			conn.createOffer(
+				function(offerDesc){
+					conn.setLocalDescription(offerDesc);
+				},
+				function(error){/* dont care */});
+		}
 	};
 	
 	Scan.getHostsXHR = function(iprange, cb){
@@ -294,7 +304,7 @@ var NetScan = (function () {
 
 			// TODO: evaluate if an additional timeout improves scan time, while not wasting result accuracy
 
-			// TODO: handle blocking of http authentication
+			// TODO: handle blocking of http authentication (in FF)
 
 			Scan.socketPool.push(ws);
 		
@@ -314,7 +324,8 @@ var NetScan = (function () {
 	Scan.getHostsLocalNetwork = function(cb){
 		Scan.getIps(function(ips){
 			var toTest = {};
-			var testCount = testedCount = 0;
+			var testCount = 0, 
+				testedCount = 0;
 
 			for(var i = 0; i < ips.length; i++){
 				if(toTest[ips[i].ip] === undefined){
