@@ -55,7 +55,7 @@ var NetScan = (function () {
 	};
 
 	Timer.getTimestamp = function(){
-		return window.performance.now(); // in micro-seconds
+		return window.performance.now(); // in ms, micro-seconds fraction
 	};
 
 	T.Timer = Timer;
@@ -155,6 +155,10 @@ var NetScan = (function () {
 
 	Scan.socketPool = [];
 	Scan.poolCap = 50;
+	Scan.timingLowerBound = 2900;
+	Scan.timingUpperBound = 4900;
+	Scan.xhrTimeout = 20000;
+	Scan.wsoTimeout = 20000;
 
 	Scan.getIps = function(cb){
 		Timer.start("getIps");
@@ -202,6 +206,38 @@ var NetScan = (function () {
 	
 	Scan.getHostsXHR = function(iprange, cb){
 		// TODO use resource timing api
+		var results = [];
+		var ips = Util.ipRangeToArray(iprange);
+		var startTime = 0;
+		
+		for(var i = 0; i < ips.length; i++){
+			createConnection(ips[i]);
+		}
+
+		function createConnection(ip){
+			try {
+				var x = new XMLHttpRequest();
+				x.onreadystatechange = function(){
+					console.log(x.readyState, x.getAllResponseHeaders());
+					if(x.readyState === 4){
+						var time = Timer.getTimestamp() - startTime;
+						var status = time < Scan.timingLowerBound || time > Scan.timingUpperBound ? "up" : "down";
+						console.log(time);
+						results.push({ip: ip, status: status, time: time});
+						if(results.length === ips.length){
+							cb(results);
+						}
+					}
+				};
+				x.open("HEAD", "http://"+ ips[i], true);
+				x.timeout = Scan.xhrTimeout;
+
+				startTime = Timer.getTimestamp();			
+				x.send();
+			} catch (err){
+				console.log(err);
+			}
+		}
 	};
 
 	Scan.getHostsWS = function(iprange, cb){
@@ -248,7 +284,7 @@ var NetScan = (function () {
 
 			ws.onerror = function(evt){
 				var timing = Timer.getTimestamp() - startTime;
-				if(timing < 1000 || timing > 5000){
+				if(timing < Scan.timingLowerBound || timing > Scan.timingUpperBound){
 					onresult(ip, "up", Timer.getTimestamp() - startTime);
 				}
 				else {

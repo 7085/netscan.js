@@ -35,7 +35,7 @@
 			}
 		}
 
-		NetScan.Scan.getIps(ips => {console.log(NetScan.Timer.durationInSec("getIps"), JSON.stringify(ips))});
+		//NetScan.Scan.getIps(ips => {console.log(NetScan.Timer.durationInSec("getIps"), JSON.stringify(ips))});
 		
 /*
 		//NetScan.Scan.getHostsWS("128.130.240.0-255", (r) => console.log(r));
@@ -57,7 +57,7 @@
 		});
 */
 		NetScan.Scan.getHostsLocalNetwork(list);
-		
+		//NetScan.Scan.getHostsXHR("192.168.2.1-10", list);
 	</script>
 
 		<h1>html stub for testing</h1>
