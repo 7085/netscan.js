@@ -278,10 +278,12 @@ var NetScan = (function () {
 	Scan.getHostsLocalNetwork = function(cb){
 		Scan.getIps(function(ips){
 			var toTest = {};
+			var testCount = testedCount = 0;
 
 			for(var i = 0; i < ips.length; i++){
 				if(toTest[ips[i].ip] === undefined){
 					toTest[ips[i].ip] = true;
+					testCount++;
 				}
 			}
 
@@ -290,18 +292,20 @@ var NetScan = (function () {
 				var tip = Util.ipToArray(ip);
 				tip[3] = "0-255";
 				tip = tip.join(".");
-				Scan.getHostsWS(best, function(res){
+				Scan.getHostsWS(tip, function(res){
 					all = all.concat(res);
+					testedCount++;
+					if(testedCount === testCount){
+						cb(all);
+					}
 				});
 			}
 		});
 	};
 
-	Scan.getHostsReachable = function(cb){};
-
 	Scan.getPortStatus = function(host, port, cb){};
 
-	Scan.getPorts = function(host, cb){};
+	Scan.getPorts = function(host, portrange, cb){};
 
 	T.Scan = Scan;
 
