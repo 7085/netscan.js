@@ -156,7 +156,7 @@ var NetScan = (function () {
 	Scan.socketPool = [];
 	Scan.poolCap = 50;
 	Scan.timingLowerBound = 2900;
-	Scan.timingUpperBound = 4900;
+	Scan.timingUpperBound = 10000;
 	Scan.xhrTimeout = 20000;
 	Scan.wsoTimeout = 20000;
 
@@ -289,7 +289,12 @@ var NetScan = (function () {
 			};
 
 			ws.onclose = function(/*CloseEvent*/ evt){
-				onresult(ip, "down", Timer.getTimestamp() - startTime);
+				if(evt.code === 4999 && evt.reason === "NetScan"){
+					onresult(ip, "up", Timer.getTimestamp() - startTime);
+				}
+				else {
+					onresult(ip, "down", Timer.getTimestamp() - startTime);
+				}
 			};
 
 			ws.onerror = function(evt){
@@ -302,6 +307,12 @@ var NetScan = (function () {
 				}
 			};
 
+			/* trigger a manual close after some time, identified by "code" and "reason"
+			 * https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent#Status_codes */1
+			var timeout = setTimeout(function(){
+				ws.close(4999, "NetScan");
+			}, Scan.wsoTimeout);
+
 			// TODO: evaluate if an additional timeout improves scan time, while not wasting result accuracy
 
 			// TODO: handle blocking of http authentication (in FF)
@@ -310,6 +321,7 @@ var NetScan = (function () {
 		
 			function onresult(ip, status, time){
 				if(!wsResult){
+					clearTimeout(timeout);
 					wsResult = true;
 					results.push({ip: ip, status: status, time: time});
 					
