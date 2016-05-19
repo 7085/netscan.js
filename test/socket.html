@@ -34,30 +34,13 @@
 				}
 			}
 		}
-
-		//NetScan.Scan.getIps(ips => {console.log(NetScan.Timer.durationInSec("getIps"), JSON.stringify(ips))});
 		
 /*
-		//NetScan.Scan.getHostsWS("128.130.240.0-255", (r) => console.log(r));
-		//NetScan.Scan.getHostsWS("192.168.2.0-25", (r) => {
-		NetScan.Scan.getHostsWS("10.0.0.0-255", (r) => {
-			var upList = document.getElementById("up");
-			var downList = document.getElementById("down");
-
-			r.sort((a,b) => {return a.time - b.time});
-			
-			for(var i = 0; i < r.length; i++){
-				if(r[i].status === "up"){
-					upList.insertAdjacentHTML("beforeend", "<li>"+ r[i].ip +" <span style=\"color:#ccc\">"+ r[i].time.toFixed(2) +"</span></li>");
-				}
-				else {
-					downList.insertAdjacentHTML("beforeend", "<li>"+ r[i].ip +" <span style=\"color:#ccc\">"+ r[i].time.toFixed(2) +"</span></li>");
-				}
-			}
-		});
+		//NetScan.Scan.getHostsWS("128.130.240.0-255", list);
+		//NetScan.Scan.getHostsWS("192.168.2.0-25", list);
+		NetScan.Scan.getHostsWS("10.0.0.0-255", list);
 */
-		//NetScan.Scan.getHostsLocalNetwork(list);
-		NetScan.Scan.getHostsXHR("192.168.2.0-255", list);
+		NetScan.Scan.getHostsLocalNetwork(list);
 	</script>
 
 		<h1>html stub for testing</h1>
