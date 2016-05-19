@@ -154,7 +154,7 @@ var NetScan = (function () {
 	function Scan(){};
 
 	Scan.socketPool = [];
-	Scan.poolCap = 50;
+	Scan.poolCap = 130;
 	Scan.timingLowerBound = 2900;
 	Scan.timingUpperBound = 10000;
 	Scan.xhrTimeout = 20000;
