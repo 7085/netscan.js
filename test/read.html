@@ -1,0 +1,158 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>test</title>
+	</head>
+	<body>
+	<script src="../src/netscan.js"></script>
+
+
+	<style>
+		.filter1 {
+			filter:url(#f1);
+		}
+		.filter2 {
+			filter: custom(none url(shader.fs), radius 0.2, amount 0.15);
+		}
+
+		svg {
+			display: none;
+		}
+
+		iframe {
+			border: none;
+			width: 600px; 
+			height: 300px; 
+		}
+
+		#read {
+			width: 600px; 
+			height: 300px; 
+			background-image: -moz-element(#ifr);
+			border:2px solid black;
+		}
+	</style>
+
+
+	<svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+	  <defs>
+		<filter id="f1" x="0" y="0"><!-- filterUnits="userSpaceOnUse" width="1200" height="400" -->
+	<!--
+		  <feOffset in="BackgroundImage" dx="0" dy="25" />
+		  <feGaussianBlur stdDeviation="8" result="blur" />
+		  <feMerge>
+		    <feMergeNode in="blur"/>
+		    <feMergeNode in="SourceGraphic"/>
+		  </feMerge>
+
+	<feImage xlink:href="#ttt"  result="gradient"/> -->
+			<feGaussianBlur in="SourceGraphic" stdDeviation="1" />
+		</filter>
+	  </defs>
+	</svg>
+
+	<iframe id="ifr" src="data:text/plain,test"></iframe>
+	<div id="read"></div>
+
+	<script>
+setTimeout(function(){
+		window.requestAnimationFrame = window.requestAnimationFrame
+		|| window.webkitRequestAnimationFrame 
+		|| window.mozRequestAnimationFrame
+		|| window.msRequestAnimationFrame;
+
+		window.cancelAnimationFrame = window.cancelAnimationFrame
+		|| window.webkitCancelAnimationFrame
+		|| window.mozCancelAnimationFrame
+		|| window.msCancelAnimationFrame;
+
+		var frame = document.getElementById("ifr");
+		var read = document.getElementById("read");
+		var tpos = 0;
+		var tneg = 0;
+		var toggle = false; // true = expensive draw, false = cheap (= no class)
+		var timingsLow = [];
+		var timingsHigh = [];
+		var loopCounter = 0;
+		var loopMax = 40;
+		var results = [];
+		/* time a positive instance, then time a negative instance */
+		var toTest = ["http://example.com/", "http://does-not-exist-12345-67890.com"];
+		var timeout;
+
+		frame.onload = frame.onerror = function(){
+			clearTimeout(timeout);
+			loop();
+		};
+
+		function start(){
+			timeout = setTimeout(function(){
+				loop();
+			}, 2000);
+			frame.src = toTest.shift();
+		}
+
+		function loop(/* DOMHighResTimeStamp */ time){
+			var drawStart = performance.now();
+			draw();
+			var drawEnd = performance.now();
+			var drawTime = drawEnd - drawStart;
+
+			if(toggle === true){
+				timingsHigh.push(drawTime);
+			}
+			else {
+				timingsLow.push(drawTime);
+			}
+			
+			console.log("drawTime", drawTime);
+			if(++loopCounter < loopMax){
+				window.requestAnimationFrame(loop);
+			}
+			else {
+				finished();
+			}
+		}
+
+		function draw(){
+			toggle = !toggle;
+			read.classList.toggle("filter1");
+		}
+
+		function finished(){
+			var medHigh = median(timingsHigh);
+			var medLow = median(timingsLow);
+			timingsHigh = [];
+			timingsLow = [];
+			loopCounter = 0;
+			toggle = false;
+			results.push({low: medLow, high: medHigh});
+			console.log("results:", results);
+
+			if(toTest.length > 0){
+				start();
+			}
+		}
+
+		function median(arr){
+			arr.sort(function(a, b){
+				return a - b;
+			});
+			var m;
+			/* even */
+			if(arr.length % 2 === 0){
+				m = (arr[arr.length / 2] + arr[arr.length / 2 - 1]) / 2;
+			}
+			/* odd */
+			else {
+				m = arr[(arr.length - 1) / 2];
+			}
+			return m;
+		}
+		//console.log("meds:", median([1,2,4,3]), median([1,2,3,7,6,5,9]));
+		start();
+}, 1000);
+	</script>
+	</body>
+</html> 

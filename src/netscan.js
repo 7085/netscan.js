@@ -192,6 +192,7 @@ var NetScan = (function () {
 				conn.close();
 				sendChan = null;
 				conn = null;
+				console.log("getting ip took:", Timer.duration("getIps"));
 			}
 		};
 
@@ -216,6 +217,8 @@ var NetScan = (function () {
 	
 	Scan.getHostsXHR = function(iprange, cb){
 		// TODO use resource timing api
+		// differences in chrome: currently no entries for failed resources, see:
+		// https://bugs.chromium.org/p/chromium/issues/detail?id=460879
 		var results = [];
 		var ips = Util.ipRangeToArray(iprange);
 		var startTime = 0;
@@ -281,7 +284,7 @@ var NetScan = (function () {
 		/* create a single connection */
 		function createConnection(ip){
 			var startTime = Timer.getTimestamp();
-			var ws = new WebSocket("ws://"+ ip);
+			var ws = new WebSocket("ws://"+ ip +"/");
 			var wsResult = false;
 
 			ws.onopen = function(evt){
@@ -316,6 +319,8 @@ var NetScan = (function () {
 			// TODO: evaluate if an additional timeout improves scan time, while not wasting result accuracy
 
 			// TODO: handle blocking of http authentication (in FF)
+
+			// TODO: try secure sockets (wss)
 
 			Scan.socketPool.push(ws);
 		

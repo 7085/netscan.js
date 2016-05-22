@@ -22,6 +22,7 @@
 		function list(r) {
 			var upList = document.getElementById("up");
 			var downList = document.getElementById("down");
+			
 
 			r.sort((a,b) => {return a.time - b.time});
 			
@@ -33,6 +34,7 @@
 					downList.insertAdjacentHTML("beforeend", "<li>"+ r[i].ip +" <span style=\"color:#ccc\">"+ r[i].time.toFixed(2) +"</span></li>");
 				}
 			}
+			
 		}
 
 		//NetScan.Scan.getIps(ips => {console.log(NetScan.Timer.durationInSec("getIps"), JSON.stringify(ips))});
@@ -55,17 +57,159 @@
 				}
 			}
 		});
+
+
+
+		NetScan.Timer.start("t1");
+		NetScan.Scan.getHostsLocalNetwork(r => {
+			var timeHTML = document.getElementById("time");
+			NetScan.Timer.stop("t1"); // XXX y u not work?!?
+			timeHTML.textContent = NetScan.Timer.duration("t1");
+			list(r);
+		});
+
 */
-		//NetScan.Scan.getHostsLocalNetwork(list);
-		NetScan.Scan.getHostsXHR("192.168.2.0-255", list);
+
+		//NetScan.Scan.getHostsXHR("192.168.2.0-255", list);
+
+
 	</script>
 
 		<h1>html stub for testing</h1>
+		<h3 id="time">processing...</h3>
 		<ul id="up">
 			<li>UP</li>
 		</ul>
 		<ul id="down">
 			<li>DOWN</li>
 		</ul>
+		
+<!--
+<svg width="200" height="200" id="svg1" style="background-image: -moz-element(#ifr); background-color: #d4d4d4;">
+
+   <circle cx="50" cy="50" r="50" style="fill: #999;"></circle>
+</svg>
+
+<svg width="200" height="200">
+  <defs>
+    <filter id="ShiftBGAndBlur" 
+            filterUnits="userSpaceOnUse" x="0" y="0" width="1200" height="400">
+      <desc>
+        This filter discards the SourceGraphic, if any, and just produces
+        a result consisting of the BackgroundImage shifted down 125 units
+        and then blurred.
+      </desc>
+      <feOffset in="BackgroundImage" dx="0" dy="125" />
+      <feGaussianBlur stdDeviation="8" />
+    </filter>
+    <filter id="ShiftBGAndBlur_WithSourceGraphic" 
+            filterUnits="userSpaceOnUse" x="0" y="0" width="1200" height="400">
+      <desc>
+        This filter takes the BackgroundImage, shifts it down 125 units, blurs it,
+        and then renders the SourceGraphic on top of the shifted/blurred background.
+      </desc>
+      <feOffset in="BackgroundImage" dx="0" dy="125" />
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g enable-background="new" transform="translate(0,0)">
+    <desc>The second adds an empty 'g' element which invokes ShiftBGAndBlur.</desc>
+    <rect x="25" y="25" width="100" height="100" fill="red"/>
+	<use xlink:href="#svg1"></use>
+    <g opacity=".5">
+      <circle cx="125" cy="75" r="45" fill="green"/>
+      <polygon points="160,25 160,125 240,75" fill="blue"/>
+    </g>
+    <g filter="url(#ShiftBGAndBlur)"/>
+    <rect x="5" y="5" width="260" height="260" fill="none" stroke="blue"/>
+	
+  </g>
+   
+</svg>
+-->
+<style>
+.c1 {
+	filter:url(#f1);
+}
+.c2 {
+	filter: custom(none url(shader.fs), radius 0.2, amount 0.15);
+}
+
+iframe {
+	border: none;
+}
+</style>
+<iframe class="c1" id="ifr" src="view-source:doesnotexist2384304.com"></iframe>
+
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+  <defs>
+    <filter id="f1" x="0" y="0"><!-- filterUnits="userSpaceOnUse" width="1200" height="400" -->
+<!--
+      <feOffset in="BackgroundImage" dx="0" dy="25" />
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+
+<feImage xlink:href="#ttt"  result="gradient"/> -->
+		<feGaussianBlur in="SourceGraphic" stdDeviation="1" />
+    </filter>
+  </defs>
+</svg>
+
+<div id="ttt" class="c1" style="width: 500px; height: 200px; background-image: -moz-element(#ifr);">test</div>
+<div id="tt" class="c2" style="width: 500px; height: 200px; background-image: -moz-element(#ttt);">test</div>
+
+<canvas id="canvas" style="border:2px solid black;" width="600" height="600">
+</canvas>
+
+	<script>
+setTimeout(function(){
+		var doc = document.implementation.createHTMLDocument("");
+		//doc.write(html);
+
+		// You must manually set the xmlns if you intend to immediately serialize 
+		// the HTML document to a string as opposed to appending it to a 
+		// <foreignObject> in the DOM
+		doc.documentElement.setAttribute("xmlns", doc.documentElement.namespaceURI);
+
+		// Get well-formed markup
+		var html = (new XMLSerializer).serializeToString(document.getElementById("ifr").document.body);
+
+		console.log(html);
+
+var data = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">' +
+           '<foreignObject width="100%" height="100%">' +
+//           '<div xmlns="http://www.w3.org/1999/xhtml" style="font-size:40px">' +
+//             '<em>I</em> like ' + 
+//             '<span style="color:white; text-shadow:0 0 2px blue;">' +
+//             'cheese</span>' +
+//           '</div>' +
+			html +
+           '</foreignObject>' +
+           '</svg>';
+var DOMURL = window.URL || window.webkitURL || window;
+
+var canvas = document.getElementById('canvas');
+var ctx = canvas.getContext('2d');
+
+var img = new Image();
+//var svg = new Blob([data], {type: 'image/svg+xml;charset=utf-8'});
+var svg = new Blob([data], {type: 'image/svg+xml;charset=utf-8'});
+var url = DOMURL.createObjectURL(svg);
+
+img.onload = function () {
+  ctx.drawImage(img, 0, 0);
+  DOMURL.revokeObjectURL(url);
+}
+
+img.src = url;
+}, 5000);
+	</script>
 	</body>
 </html> 

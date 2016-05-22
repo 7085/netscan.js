@@ -158,3 +158,6 @@ not integrated yet:
 
 - [18]: https://html.spec.whatwg.org/multipage/comms.html#network
 
+- [19]: https://www.w3.org/TR/resource-timing/
+- [20]: https://developer.mozilla.org/en-US/docs/Web/API/Resource_Timing_API/Using_the_Resource_Timing_API
+
