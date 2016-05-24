@@ -10,34 +10,159 @@
 
 	<style>
 		.filter1 {
-			filter:url(#f1);
+			filter: url(#filtereffect);
 		}
+/* custom filters got removed 2014...
 		.filter2 {
 			filter: custom(none url(shader.fs), radius 0.2, amount 0.15);
 		}
-
-		svg {
-			display: none;
-		}
+*/
 
 		iframe {
 			border: none;
 			width: 600px; 
-			height: 300px; 
+			height: 200px; 
+			overflow: hidden;
 		}
 
 		#read {
 			width: 600px; 
-			height: 300px; 
+			height: 200px; 
+			border: none;
 			background-image: -moz-element(#ifr);
-			border:2px solid black;
+			/* do not exist now, but are in the spec 
+			 * https://drafts.csswg.org/css-images-4/#element-notation
+			 * https://bugs.webkit.org/show_bug.cgi?id=44650 */
+			background-image: -webkit-element(#ifr);
+			background-image: -ms-element(#ifr);
+			background-image: element(#ifr);
+
+			/*http://stackoverflow.com/questions/14068103/disable-antialising-when-scaling-images*/
+			image-rendering: optimizeSpeed;             /* STOP SMOOTHING, GIVE ME SPEED  */
+			image-rendering: -moz-crisp-edges;          /* Firefox                        */
+			image-rendering: -o-crisp-edges;            /* Opera                          */
+			image-rendering: -webkit-optimize-contrast; /* Chrome (and eventually Safari) */
+			image-rendering: pixelated; /* Chrome */
+			image-rendering: optimize-contrast;         /* CSS3 Proposed                  */
+			-ms-interpolation-mode: nearest-neighbor;   /* IE8+   						  */
+/*
+			transform: scale(10);
+			transform-origin: 0 0;
+*/
 		}
 	</style>
 
 
 	<svg xmlns="http://www.w3.org/2000/svg" version="1.1">
-	  <defs>
-		<filter id="f1" x="0" y="0"><!-- filterUnits="userSpaceOnUse" width="1200" height="400" -->
+		<defs>
+			<filter id="filtereffect" x="0" y="0">
+<!--
+  <feMorphology radius="6" operator="dilate" in="SourceGraphic" />
+  <feComponentTransfer>
+    <feFuncR type="table" tableValues="1 0.5"/>
+  </feComponentTransfer>
+  <feMerge result="text">
+    <feMergeNode/>
+    <feMergeNode in="SourceGraphic"/>
+  </feMerge>
+  <feTurbulence type="fractalNoise" baseFrequency="0.017" numOctaves="1" result="warp" />
+  <feDisplacementMap xChannelSelector="R" yChannelSelector="G" scale="50" in="text" in2="warp" result="r1" />
+
+  <feMorphology radius="4" operator="dilate" in="SourceGraphic" />
+  <feComponentTransfer>
+    <feFuncG type="table" tableValues="1 0.5"/>
+  </feComponentTransfer>
+  <feMerge result="text2">
+    <feMergeNode/>
+    <feMergeNode in="SourceGraphic"/>
+  </feMerge>
+  <feTurbulence type="fractalNoise" baseFrequency="0.017" numOctaves="1" result="warp2" />
+  <feDisplacementMap xChannelSelector="G" yChannelSelector="B" scale="50" in="text2" in2="warp2" result="r2" />
+
+  <feMorphology radius="2" operator="dilate" in="SourceGraphic" />
+  <feComponentTransfer>
+    <feFuncB type="table" tableValues="1 0.5"/>
+  </feComponentTransfer>
+  <feMerge result="text3">
+    <feMergeNode/>
+    <feMergeNode in="SourceGraphic"/>
+  </feMerge>
+  <feTurbulence type="fractalNoise" baseFrequency="0.017" numOctaves="1" result="warp3" />
+  <feDisplacementMap xChannelSelector="B" yChannelSelector="R" scale="50" in="text3" in2="warp3" result="r3" />
+
+<feMerge result="r4">
+	<feMergeNode in="r1"/>
+   <feMergeNode in="r2"/>
+   <feMergeNode in="r3"/>
+ </feMerge>
+
+<feTurbulence baseFrequency=".02" numOctaves="2" seed="10" type="turbulence"/>
+<feColorMatrix type="luminanceToAlpha"/>
+<feComponentTransfer>
+ <feFuncA type="table" tableValues="1 0"/>
+</feComponentTransfer>
+<feComposite in="SourceGraphic" operator="xor"/>
+<feComposite in="r4" operator="xor"/>
+
+<feDiffuseLighting surfaceScale="100" result="scene">  
+	<feDistantLight azimuth="0" elevation="20"/>
+</feDiffuseLighting>
+<feSpecularLighting surfaceScale="100" result="highlights">  
+	<feDistantLight azimuth="90" elevation="20" />
+</feSpecularLighting>
+<feComposite in="scene" in2="highlights" operator="xor"/>
+
+<feTurbulence baseFrequency=".02" numOctaves="2" seed="10" type="turbulence"/>
+<feColorMatrix type="luminanceToAlpha"/>
+<feComponentTransfer>
+ <feFuncA type="table" tableValues="1 0"/>
+</feComponentTransfer>
+<feComposite in="SourceGraphic" operator="xor"/>
+<feComposite in="r4" operator="xor"/>
+
+<feDiffuseLighting surfaceScale="100" result="scene">  
+	<feDistantLight azimuth="0" elevation="20"/>
+</feDiffuseLighting>
+<feSpecularLighting surfaceScale="100" result="highlights">  
+	<feDistantLight azimuth="90" elevation="20" />
+</feSpecularLighting>
+<feComposite in="scene" in2="highlights" operator="xor"/>
+
+<feTurbulence baseFrequency=".02" numOctaves="2" seed="10" type="turbulence"/>
+<feColorMatrix type="luminanceToAlpha"/>
+<feComponentTransfer>
+ <feFuncA type="table" tableValues="1 0"/>
+</feComponentTransfer>
+<feComposite in="SourceGraphic" operator="xor"/>
+<feComposite in="r4" operator="xor"/>
+
+<feDiffuseLighting surfaceScale="100" result="scene">  
+	<feDistantLight azimuth="0" elevation="20"/>
+</feDiffuseLighting>
+<feSpecularLighting surfaceScale="100" result="highlights">  
+	<feDistantLight azimuth="90" elevation="20" />
+</feSpecularLighting>
+<feComposite in="scene" in2="highlights" operator="xor"/>
+-->
+<feImage xlink:href="#svg1" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none"/>
+
+			</filter>
+		</defs>
+	</svg>
+	<br />
+
+<svg id="svg1" xmlns="http://www.w3.org/2000/svg" xmlns:html="http://www.w3.org/1999/xhtml">
+  <html:iframe src="data:text/plain;charset=utf-8,test" controls="controls">
+  </html:iframe>
+</svg>
+
+<svg id="svg2" xmlns="http://www.w3.org/2000/svg" xmlns:html="http://www.w3.org/1999/xhtml">
+<foreignObject width="560" height="349">
+    <iframe xmlns="http://www.w3.org/1999/xhtml"
+    width="560" height="315" src="data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E" frameborder="0"></iframe>
+</foreignObject>
+</svg>
+
 	<!--
 		  <feOffset in="BackgroundImage" dx="0" dy="25" />
 		  <feGaussianBlur stdDeviation="8" result="blur" />
@@ -47,13 +172,9 @@
 		  </feMerge>
 
 	<feImage xlink:href="#ttt"  result="gradient"/> -->
-			<feGaussianBlur in="SourceGraphic" stdDeviation="1" />
-		</filter>
-	  </defs>
-	</svg>
 
-	<iframe id="ifr" src="data:text/plain,test"></iframe>
-	<div id="read"></div>
+	<iframe id="ifr" src="data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E"></iframe>
+	<div id="read" class="filter1"></div>
 
 	<script>
 setTimeout(function(){
@@ -78,15 +199,19 @@ setTimeout(function(){
 		var loopMax = 40;
 		var results = [];
 		/* time a positive instance, then time a negative instance */
-		var toTest = ["http://example.com/", "http://does-not-exist-12345-67890.com"];
+		var toTest = [
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E"
+		];
 		var timeout;
 
-		frame.onload = frame.onerror = function(){
-			clearTimeout(timeout);
-			loop();
-		};
+		// TODO create iframe and read div in js
 
 		function start(){
+			frame.onload = frame.onerror = function(){
+				clearTimeout(timeout);
+				loop();
+			};
 			timeout = setTimeout(function(){
 				loop();
 			}, 2000);
@@ -123,12 +248,13 @@ setTimeout(function(){
 		function finished(){
 			var medHigh = median(timingsHigh);
 			var medLow = median(timingsLow);
+			results.push({mlow: medLow, mhigh: medHigh, diff: medHigh - medLow}); //alow: average(timingsLow), ahigh: average(timingsHigh)});
+			console.log("results:", results);
+
 			timingsHigh = [];
 			timingsLow = [];
 			loopCounter = 0;
 			toggle = false;
-			results.push({low: medLow, high: medHigh});
-			console.log("results:", results);
 
 			if(toTest.length > 0){
 				start();
@@ -150,8 +276,25 @@ setTimeout(function(){
 			}
 			return m;
 		}
+
+		function average(arr){
+			/* simple loop is fastest... */
+			var sum = 0;
+			for(var i = 0; i < arr.length; i++){
+				sum += arr[i];
+			}
+			return sum / arr.length;
+		}
 		//console.log("meds:", median([1,2,4,3]), median([1,2,3,7,6,5,9]));
-		start();
+		//start();
+
+		function test(){
+			var img = new Image();
+			img.onload = function() {
+				ctx.drawImage(img, 0, 0);
+			}
+			img.src = "http://upload.wikimedia.org/wikipedia/commons/d/d2/Svg_example_square.svg";
+		}
 }, 1000);
 	</script>
 	</body>
