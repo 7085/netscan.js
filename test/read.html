@@ -5,7 +5,7 @@
 		<title>test</title>
 	</head>
 	<body>
-	<script src="../src/netscan.js"></script>
+	<!--<script src="../src/netscan.js"></script>-->
 
 
 	<style>
@@ -144,13 +144,95 @@
 </feSpecularLighting>
 <feComposite in="scene" in2="highlights" operator="xor"/>
 -->
-<feImage xlink:href="#svg1" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none"/>
+
+<!--
+<feColorMatrix type="matrix" values="1 0 0 0 0
+                                     0 1 0 0 0
+                                     0 0 1 0 0
+                                     1 1 1 0 0" result="colorToAlpha" />
+
+<feColorMatrix type="matrix" values="0 1 1 0 0
+                                     1 0 1 0 0
+                                     1 1 0 0 0
+                                     1 1 1 0 0" result="colorToAlpha" />
+
+<feColorMatrix type="matrix" values="0 0 0 0 0
+                                     0 0 0 0 0
+                                     0 0 0 0 0
+                                     1 1 1 0 0" result="colorToAlpha" />
+-->
+<feComponentTransfer result="terrain">
+	<feFuncA type="table" tableValues="1 0"/>
+</feComponentTransfer>
+<feDiffuseLighting surfaceScale="100" in="terrain" result="scene">
+	<feDistantLight azimuth="0" elevation="20"/>
+</feDiffuseLighting>
+<feSpecularLighting surfaceScale="100" in="terrain" result="highlights">
+	<feDistantLight azimuth="90" elevation="20" />
+</feSpecularLighting>
+<feComposite in="scene" in2="highlights" operator="xor" result="light1"/>
+
+  <feSpecularLighting surfaceScale="5" specularConstant=".75"
+      specularExponent="20" lighting-color="#bbbbbb" in="colorToAlpha"
+      result="highlight">
+    <fePointLight x="-5000" y="-10000" z="20000"/>
+  </feSpecularLighting>
+  <feComposite in="highlight" in2="colorToAlpha" operator="in" result="highlight"/>
+  <feComposite in="colorToAlpha" in2="highlight" operator="arithmetic"
+               k1="0" k2="1" k3="1" k4="0" result="light2"/>
+  <feMerge>
+    <feMergeNode in="colorToAlpha"/>
+	<feMergeNode in="light1"/>
+	<feMergeNode in="light2"/>
+</feMerge>
+
+		<feConvolveMatrix order="30" preserveAlpha="false" divisor="1" bias="0" edgeMode="none"
+        kernelMatrix="
+		  -1 -2 -1
+		   0  0  0
+		   1  2  1"
+		/>
+
+		<feConvolveMatrix order="30" preserveAlpha="true" divisor="1" bias="0" edgeMode="none"
+        kernelMatrix="
+		  -1  0  1
+		  -2  0  2
+		  -1  0  1"
+		/>
+
+		<feConvolveMatrix order="30" preserveAlpha="false" divisor="1" bias="0" edgeMode="none"
+        kernelMatrix="
+		   1  2  1
+		   0  0  0
+		  -1 -2 -1"
+		/>
+
+		<feConvolveMatrix order="30" preserveAlpha="false" divisor="1" bias="0" edgeMode="wrap"
+        kernelMatrix="
+		  -1 -2 -1
+		   0  0  0
+		   1  2  1"
+		/>
+
+		<feConvolveMatrix order="30" preserveAlpha="true" divisor="1" bias="0" edgeMode="wrap"
+        kernelMatrix="
+		  -1  0  1
+		  -2  0  2
+		  -1  0  1"
+		/>
+
+		<feConvolveMatrix order="30" preserveAlpha="false" divisor="1" bias="0" edgeMode="wrap"
+        kernelMatrix="
+		   1  2  1
+		   0  0  0
+		  -1 -2 -1"
+		/>
 
 			</filter>
 		</defs>
 	</svg>
 	<br />
-
+<!--
 <svg id="svg1" xmlns="http://www.w3.org/2000/svg" xmlns:html="http://www.w3.org/1999/xhtml">
   <html:iframe src="data:text/plain;charset=utf-8,test" controls="controls">
   </html:iframe>
@@ -162,7 +244,7 @@
     width="560" height="315" src="data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E" frameborder="0"></iframe>
 </foreignObject>
 </svg>
-
+-->
 	<!--
 		  <feOffset in="BackgroundImage" dx="0" dy="25" />
 		  <feGaussianBlur stdDeviation="8" result="blur" />
@@ -200,6 +282,24 @@ setTimeout(function(){
 		var results = [];
 		/* time a positive instance, then time a negative instance */
 		var toTest = [
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E",
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E",
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E",
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E",
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E",
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E",
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E",
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E",
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
+			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E",
 			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
 			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E"
 		];
@@ -259,6 +359,31 @@ setTimeout(function(){
 			if(toTest.length > 0){
 				start();
 			}
+			else {
+				/* present final results */
+				var final = {};
+				final.b = {};
+				final.b.h = [];
+				final.b.l = [];
+				final.w = {};
+				final.w.h = [];
+				final.w.l = [];
+				for(var i = 0; i < results.length; i += 2){
+					final.b.h.push(results[i].mhigh);
+					final.b.l.push(results[i].mlow);
+					final.w.h.push(results[i+1].mhigh);
+					final.w.l.push(results[i+1].mlow);
+				}
+				console.log(final);
+				console.log("med b h", median(final.b.h));
+				console.log("med b l", median(final.b.l));
+				console.log("med w h", median(final.w.h));
+				console.log("med w l", median(final.w.l));
+				console.log("avg b h", average(final.b.h));
+				console.log("avg b l", average(final.b.l));
+				console.log("avg w h", average(final.w.h));
+				console.log("avg w l", average(final.w.l));
+			}
 		}
 
 		function median(arr){
@@ -286,15 +411,8 @@ setTimeout(function(){
 			return sum / arr.length;
 		}
 		//console.log("meds:", median([1,2,4,3]), median([1,2,3,7,6,5,9]));
-		//start();
+		start();
 
-		function test(){
-			var img = new Image();
-			img.onload = function() {
-				ctx.drawImage(img, 0, 0);
-			}
-			img.src = "http://upload.wikimedia.org/wikipedia/commons/d/d2/Svg_example_square.svg";
-		}
 }, 1000);
 	</script>
 	</body>
