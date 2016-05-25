@@ -29,13 +29,15 @@
 			width: 600px; 
 			height: 200px; 
 			border: none;
+/*
 			background-image: -moz-element(#ifr);
 			/* do not exist now, but are in the spec 
 			 * https://drafts.csswg.org/css-images-4/#element-notation
-			 * https://bugs.webkit.org/show_bug.cgi?id=44650 */
+			 * https://bugs.webkit.org/show_bug.cgi?id=44650 *
 			background-image: -webkit-element(#ifr);
 			background-image: -ms-element(#ifr);
 			background-image: element(#ifr);
+*/
 
 			/*http://stackoverflow.com/questions/14068103/disable-antialising-when-scaling-images*/
 			image-rendering: optimizeSpeed;             /* STOP SMOOTHING, GIVE ME SPEED  */
@@ -56,7 +58,7 @@
 	<svg xmlns="http://www.w3.org/2000/svg" version="1.1">
 		<defs>
 			<filter id="filtereffect" x="0" y="0">
-<!--
+
   <feMorphology radius="6" operator="dilate" in="SourceGraphic" />
   <feComponentTransfer>
     <feFuncR type="table" tableValues="1 0.5"/>
@@ -143,7 +145,7 @@
 	<feDistantLight azimuth="90" elevation="20" />
 </feSpecularLighting>
 <feComposite in="scene" in2="highlights" operator="xor"/>
--->
+
 
 <!--
 <feColorMatrix type="matrix" values="1 0 0 0 0
@@ -160,7 +162,9 @@
                                      0 0 0 0 0
                                      0 0 0 0 0
                                      1 1 1 0 0" result="colorToAlpha" />
--->
+
+
+
 <feComponentTransfer result="terrain">
 	<feFuncA type="table" tableValues="1 0"/>
 </feComponentTransfer>
@@ -227,7 +231,7 @@
 		   0  0  0
 		  -1 -2 -1"
 		/>
-
+-->
 			</filter>
 		</defs>
 	</svg>
@@ -254,9 +258,9 @@
 		  </feMerge>
 
 	<feImage xlink:href="#ttt"  result="gradient"/> -->
-
+<div id="read">
 	<iframe id="ifr" src="data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E"></iframe>
-	<div id="read" class="filter1"></div>
+</div>
 
 	<script>
 setTimeout(function(){
@@ -278,60 +282,56 @@ setTimeout(function(){
 		var timingsLow = [];
 		var timingsHigh = [];
 		var loopCounter = 0;
-		var loopMax = 40;
+		var loopMax = 30;
 		var results = [];
+		var resultsL = [];
+		var resultsH = [];
 		/* time a positive instance, then time a negative instance */
 		var toTest = [
-			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
-			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E",
-			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
-			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E",
-			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
-			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E",
-			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
-			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E",
-			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
-			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E",
-			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
-			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E",
-			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
-			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E",
-			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
-			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E",
 			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
 			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E",
 			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23000%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E", 
 			"data:text/html;charset=utf-8,%3Chtml%3E%3Chead%3E%3C%2Fhead%3E%3Cbody%20style%3D%22background-color%3A%23fff%22%3E%3C%2Fbody%3E%3C%2Fhtml%3E"
 		];
 		var timeout;
+		var drawTime, drawStart;
 
 		// TODO create iframe and read div in js
 
 		function start(){
+			timeout = setTimeout(function(){
+				window.requestAnimationFrame(loop);
+			}, 2000);
 			frame.onload = frame.onerror = function(){
 				clearTimeout(timeout);
-				loop();
+				window.requestAnimationFrame(loop);
 			};
-			timeout = setTimeout(function(){
-				loop();
-			}, 2000);
+			drawStart = performance.now();
 			frame.src = toTest.shift();
 		}
 
 		function loop(/* DOMHighResTimeStamp */ time){
-			var drawStart = performance.now();
-			draw();
-			var drawEnd = performance.now();
-			var drawTime = drawEnd - drawStart;
+			//var drawStart = performance.now();
+			
+			//draw();
+			//toggle = !toggle;
+			
+			read.classList.toggle("filter1");
+			
+			drawTime = time - drawStart;
+			drawStart = time;
+			//var drawEnd = performance.now();
+			//var drawTime = drawEnd - drawStart;
 
-			if(toggle === true){
+			//if(toggle === true){
+			if(read.classList.contains("filter1")){
 				timingsHigh.push(drawTime);
 			}
 			else {
 				timingsLow.push(drawTime);
 			}
 			
-			console.log("drawTime", drawTime);
+			//console.log("drawTime", drawTime);
 			if(++loopCounter < loopMax){
 				window.requestAnimationFrame(loop);
 			}
@@ -339,22 +339,24 @@ setTimeout(function(){
 				finished();
 			}
 		}
-
+/*
 		function draw(){
 			toggle = !toggle;
 			read.classList.toggle("filter1");
 		}
-
+*/
 		function finished(){
 			var medHigh = median(timingsHigh);
 			var medLow = median(timingsLow);
 			results.push({mlow: medLow, mhigh: medHigh, diff: medHigh - medLow}); //alow: average(timingsLow), ahigh: average(timingsHigh)});
+			resultsH.push(timingsHigh);
+			resultsL.push(timingsLow);
 			console.log("results:", results);
 
 			timingsHigh = [];
 			timingsLow = [];
 			loopCounter = 0;
-			toggle = false;
+			//toggle = false;
 
 			if(toTest.length > 0){
 				start();
@@ -368,11 +370,19 @@ setTimeout(function(){
 				final.w = {};
 				final.w.h = [];
 				final.w.l = [];
+				final.b.aL = [];
+				final.b.aH = [];
+				final.w.aL = [];
+				final.w.aH = [];
 				for(var i = 0; i < results.length; i += 2){
 					final.b.h.push(results[i].mhigh);
 					final.b.l.push(results[i].mlow);
 					final.w.h.push(results[i+1].mhigh);
 					final.w.l.push(results[i+1].mlow);
+					final.b.aL = final.b.aL.concat(resultsL[i]);
+					final.b.aH = final.b.aH.concat(resultsH[i]);
+					final.w.aL = final.w.aL.concat(resultsL[i+1]);
+					final.w.aH = final.w.aH.concat(resultsH[i+1]);
 				}
 				console.log(final);
 				console.log("med b h", median(final.b.h));
@@ -383,6 +393,10 @@ setTimeout(function(){
 				console.log("avg b l", average(final.b.l));
 				console.log("avg w h", average(final.w.h));
 				console.log("avg w l", average(final.w.l));
+				console.log("med b L", median(final.b.aL));
+				console.log("med b H", median(final.b.aH));
+				console.log("med w L", median(final.w.aL));
+				console.log("med w H", median(final.w.aH));
 			}
 		}
 

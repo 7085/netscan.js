@@ -112,7 +112,7 @@ var NetScan = (function () {
 		var ranges = [];
 		iprange.split(".").map(function(elem){
 			if(elem.indexOf("-") !== -1){
-				ranges.push(elem.split("-").map(Number))
+				ranges.push(elem.split("-").map(Number));
 			}
 			else {
 				var n = Number(elem);
@@ -132,6 +132,23 @@ var NetScan = (function () {
 		}
 
 		return ips;
+	};
+
+	Util.portRangeToArray = function(portrange){
+		var range = [];
+		if(portrange.indexOf("-") !== -1){
+			range = portrange.split("-").map(Number);
+		}
+		else {
+			range = [Number(portrange), Number(portrange)];
+		}
+
+		var ports = [];
+		for(var i = range[0]; i <= range[1]; i++){
+			ports.push(i);
+		}
+
+		return ports;
 	};
 
 	Util.isPrivateIp = function(ip){
@@ -159,6 +176,7 @@ var NetScan = (function () {
 	Scan.timingUpperBound = 10000;
 	Scan.xhrTimeout = 20000;
 	Scan.wsoTimeout = 20000;
+	Scan.portScanBufferSize = 100;
 
 	Scan.getIps = function(cb){
 		Timer.start("getIps");
@@ -367,9 +385,57 @@ var NetScan = (function () {
 		});
 	};
 
-	Scan.getPortStatus = function(host, port, cb){};
 
-	Scan.getPorts = function(host, portrange, cb){};
+	Scan.getPorts = function(host, portrange, cb){
+		var ports = Util.portRangeToArray(portrange);
+		// TODO: check for port restrictions
+		
+		var wsBuffer = [];
+		var xhrBuffer = [];
+
+		var results = [];		
+
+		var id = 0;
+		var monitor = setInterval(function(){
+			var url;
+			if(id < ports.length){
+				while(wsBuffer.length < Scan.portScanBufferSize){
+					url = "ws://"+ host +":"+ ports[id++];
+					wsBuffer.push(doRequestWS(url));
+					
+				}
+				while(xhrBuffer.length < Scan.portScanBufferSize){
+					url = "http://"+ host +":"+ ports[id++];
+					xhrBuffer.push(doRequestXHR(url));
+				}
+			}
+		}, 50);
+
+		function doRequestWS(url){
+			
+		}
+
+		function doRequestXHR(url){
+			
+		}
+
+		function onResultWS(self, url, status){
+			results.push({ip: url, status: status});
+			wsBuffer.splice(wsBuffer.indexOf(self), 1);
+			if(results.length === ports.length){
+				cb(results);
+			}
+		}
+
+		function onResultXHR(self, url, status){
+			results.push({ip: url, status: status});
+			xhrBuffer.splice(xhrBuffer.indexOf(self), 1);
+			if(results.length === ports.length){
+				cb(results);
+			}
+		}
+
+	};
 
 	T.Scan = Scan;
 

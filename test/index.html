@@ -19,70 +19,33 @@
 	<body>
 	<script src="../src/netscan.js"></script>
 	<script>
-		function list(r) {
-			var upList = document.getElementById("up");
-			var downList = document.getElementById("down");
-			
-
-			r.sort((a,b) => {return a.time - b.time});
+		function tabinsert(r) {
+			var table = document.getElementById("tab");
 			
 			for(var i = 0; i < r.length; i++){
-				if(r[i].status === "up"){
-					upList.insertAdjacentHTML("beforeend", "<li>"+ r[i].ip +" <span style=\"color:#ccc\">"+ r[i].time.toFixed(2) +"</span></li>");
-				}
-				else {
-					downList.insertAdjacentHTML("beforeend", "<li>"+ r[i].ip +" <span style=\"color:#ccc\">"+ r[i].time.toFixed(2) +"</span></li>");
-				}
+				tab.insertAdjacentHTML("beforeend", "<tr><td>"+ r[i].ip +"</td><td>"+ r[i].status +"</td></tr>");
 			}
 			
 		}
 
-		//NetScan.Scan.getIps(ips => {console.log(NetScan.Timer.durationInSec("getIps"), JSON.stringify(ips))});
-		
-/*
-		//NetScan.Scan.getHostsWS("128.130.240.0-255", (r) => console.log(r));
-		//NetScan.Scan.getHostsWS("192.168.2.0-25", (r) => {
-		NetScan.Scan.getHostsWS("10.0.0.0-255", (r) => {
-			var upList = document.getElementById("up");
-			var downList = document.getElementById("down");
 
-			r.sort((a,b) => {return a.time - b.time});
-			
-			for(var i = 0; i < r.length; i++){
-				if(r[i].status === "up"){
-					upList.insertAdjacentHTML("beforeend", "<li>"+ r[i].ip +" <span style=\"color:#ccc\">"+ r[i].time.toFixed(2) +"</span></li>");
-				}
-				else {
-					downList.insertAdjacentHTML("beforeend", "<li>"+ r[i].ip +" <span style=\"color:#ccc\">"+ r[i].time.toFixed(2) +"</span></li>");
-				}
-			}
-		});
-
-
-
-		NetScan.Timer.start("t1");
-		NetScan.Scan.getHostsLocalNetwork(r => {
-			var timeHTML = document.getElementById("time");
-			NetScan.Timer.stop("t1"); // XXX y u not work?!?
-			timeHTML.textContent = NetScan.Timer.duration("t1");
-			list(r);
-		});
-
-*/
-
-		//NetScan.Scan.getHostsXHR("192.168.2.0-255", list);
+		NetScan.Scan.getPorts("192.168.2.1", "1-65535", tabinsert);
 
 
 	</script>
 
 		<h1>html stub for testing</h1>
 		<h3 id="time">processing...</h3>
-		<ul id="up">
-			<li>UP</li>
-		</ul>
-		<ul id="down">
-			<li>DOWN</li>
-		</ul>
+		<table id="tab">
+			<tr>
+				<th>ip/port</th>
+				<th>status</th>
+			</tr>
+			<tr>
+				<td>a</td>
+				<td>b</td>
+			</tr>
+		</table>
 
 	</body>
 </html> 
