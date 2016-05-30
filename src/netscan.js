@@ -433,73 +433,44 @@ var NetScan = (function () {
 		var ports = Util.portRangeToArray(portrange);
 		/* Browser port restrictions, can be found in the fetch spec:
 		 * https://fetch.spec.whatwg.org/#port-blocking 
-		 * those seem to be enforced to websockets, fetch but not xhr
+		 * those seem to be enforced to all kinds of connections
 		 * creating a websocket will instantly fail with an exception, 
-		 * a xhr will succeed, unsafe ports only get reported in the console...
+		 * a xhr will be blocked when the request is sent and returns very fast
 		 * The specific list can be found at:
 		 * - CHROME/CHROMIUM: https://src.chromium.org/viewvc/chrome/trunk/src/net/base/net_util.cc?view=markup 
 		 * - FF: http://www-archive.mozilla.org/projects/netlib/PortBanning.html#portlist 
 		 * a few exceptions exist, depending on a specific protocol, e.g. FTP allows 21 and 22 */
 		// TODO: handle blocked ports
-		var insecure = [1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43, 53, 77, 79, 87, 95, 101, 102, 103, 104, 109, 110, 111, 113, 115, 117, 119, 123, 135, 139, 143, 179, 389, 465, 512, 513, 514, 515, 526, 530, 531, 532, 540, 556, 563, 587, 601, 636, 993, 995, 2049, 3659, 4045, 6000, 6665, 6666, 6667, 6668, 6669];
-
-		var wsBuffer = [];
-		var xhrBuffer = [];
+		var blocked = [1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43, 53, 77, 79, 87, 95, 101, 102, 103, 104, 109, 110, 111, 113, 115, 117, 119, 123, 135, 139, 143, 179, 389, 465, 512, 513, 514, 515, 526, 530, 531, 532, 540, 556, 563, 587, 601, 636, 993, 995, 2049, 3659, 4045, 6000, 6665, 6666, 6667, 6668, 6669];
 
 		var results = [];		
 
-		var id = 0;
-		var monitor = setInterval(function(){
-			var url;
-			if(id < ports.length){
-/*
-				while(wsBuffer.length < Scan.portScanBufferSize 
-				&& id < ports.length){
-					url = "ws://"+ host +":"+ ports[id];
-					wsBuffer.push(doRequestWS(url, id));
-					id++;
-				}
-*/
-				while(xhrBuffer.length < Scan.portScanBufferSize
-				&& id < ports.length){
-					url = "http://"+ host +":"+ ports[id];
-					xhrBuffer.push(doRequestXHR(url, id));
-					id++;
-				}
-
+		for(var i = 0; i < ports.length; i++){
+			var url = "http://"+ host +":"+ ports[i];
+			if(blocked.indexOf(ports[i]) !== -1){
+				onResultXHR(url, 0, "BLOCKED");
 			}
-			else {				
-				clearInterval(monitor);
+			else {
+				doRequestXHR(url);
 			}
-		}, 50);
-
-		function doRequestWS(url, id){
-			createConnectionWS(url, function(address, timing, info){
-				// TODO recompute status based on time...
-				onResultWS(id, address, timing, info);
-			});
+			
 		}
 
-		function doRequestXHR(url, id){
+		function doRequestXHR(url){
 			createConnectionXHR(url, function(address, timing, info){
-				// TODO recompute status based on time...
-				onResultXHR(id, address, timing, info);
+				onResultXHR(address, timing, info);
 			});
 		}
 
-		function onResultWS(id, address, timing, info){
+		function onResultXHR(address, timing, info){
 			var status = "???"; // TODO
-			results.push({ip: address, time: timing, status: status, info: info});
-			wsBuffer.splice(id, 1);
-			if(results.length === ports.length){
-				scanFinishedCB(results);
+			if(info === "BLOCKED"){
+				status = info;
+				info = "Port is blocked by browser.";
 			}
-		}
 
-		function onResultXHR(id, address, timing, info){
-			var status = "???"; // TODO
 			results.push({ip: address, time: timing, status: status, info: info});
-			xhrBuffer.splice(id, 1);
+
 			if(results.length === ports.length){
 				scanFinishedCB(results);
 			}
