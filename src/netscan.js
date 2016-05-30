@@ -177,6 +177,7 @@ var NetScan = (function () {
 	Scan.xhrTimeout = 20000;
 	Scan.wsoTimeout = 20000;
 	Scan.portScanBufferSize = 100;
+	// TODO separate timing bounds for ws and xhr
 /*
 	Scan.scanTypes = {
 		WS: 1,
@@ -240,18 +241,22 @@ var NetScan = (function () {
 		}
 	};
 
-		
-	function createConnectionXHR(address, onResultCB){
+	/* handleResultCB:
+		string address
+		number timing
+		string info
+	 */
+	function createConnectionXHR(address, handleResultCB){
 		try {
 			var x = new XMLHttpRequest();
 			var startTime = 0;
 			x.onreadystatechange = function(){
-				console.log(x.readyState, x.getAllResponseHeaders());
+				//console.log(x.readyState, x.getAllResponseHeaders());
 				if(x.readyState === 4){
-					var time = Timer.getTimestamp() - startTime;
-					var status = time < Scan.timingLowerBound || time > Scan.timingUpperBound ? "up" : "down";
-					console.log(time);
-					onResultCB(address, status, time);
+					var timing = Timer.getTimestamp() - startTime;
+					//var status = time < Scan.timingLowerBound || time > Scan.timingUpperBound ? "up" : "down";
+					//console.log(time);
+					handleResultCB(address, timing, "");
 				}
 			};
 			x.open("HEAD", address, true);
@@ -259,62 +264,81 @@ var NetScan = (function () {
 
 			startTime = Timer.getTimestamp();			
 			x.send();
-		} catch (err){
+		} 
+		catch (err){
 			console.log(err);
-			onResultCB(address, err.toString(), 0);
+			handleResultCB(address, 0, err.toString());
 		}
 	}
 
-	Scan.getHostsXHR = function(iprange, cbReturn){
+	Scan.getHostsXHR = function(iprange, scanFinishedCB){
 		// TODO use resource timing api
 		// differences in chrome: currently no entries for failed resources, see:
 		// https://bugs.chromium.org/p/chromium/issues/detail?id=460879
 		var results = [];
+		var protocol = "http://";
 		var addresses = Util.ipRangeToArray(iprange);
+
+		function handleSingleResult(address, timing, info){
+			var status = timing < Scan.timingLowerBound || timing > Scan.timingUpperBound ? "up" : "down";
+			results.push({ip: address, time: timing, status: status, info: info});
+
+			/* last result received, return */
+			if(results.length === addresses.length){
+				scanFinishedCB(results);
+			}
+		}
 		
 		for(var i = 0; i < addresses.length; i++){
-			createConnectionXHR("http://"+ addresses[i], function(address, status, time){
-				results.push({ip: address, status: status, time: time});
-				if(results.length === addresses.length){
-					cbReturn(results);
-				}
-			});
+			createConnectionXHR(protocol + addresses[i], handleSingleResult);
 		}
 	};
 
 	/* create a single connection */
-	function createConnectionWS(address, onResultCB){
+	function createConnectionWS(address, handleSingleResult){
+		var startTime = Timer.getTimestamp();
+		var wsResult = false;
+		var timeout,
+			ws;
+
+		function onresult(address, timing, info){
+			if(!wsResult){
+				clearTimeout(timeout);
+				wsResult = true;
+		
+				Scan.socketPool.splice(Scan.socketPool.indexOf(ws), 1);
+				ws.close();
+				ws = null;
+
+				handleSingleResult(address, timing, info);
+			}
+		}
+
 		try {
-			var startTime = Timer.getTimestamp();
-			var ws = new WebSocket(address);
-			var wsResult = false;
+			ws = new WebSocket(address);
 
 			ws.onopen = function(evt){
-				onresult(address, "up", Timer.getTimestamp() - startTime);
+				onresult(address, Timer.getTimestamp() - startTime, "WS opened");
 			};
 
 			ws.onclose = function(/*CloseEvent*/ evt){
 				if(evt.code === 4999 && evt.reason === "NetScan"){
-					onresult(address, "up", Timer.getTimestamp() - startTime);
+					onresult(address, Timer.getTimestamp() - startTime, "WS closed by timeout");
 				}
 				else {
-					onresult(address, "down", Timer.getTimestamp() - startTime);
+					onresult(address, Timer.getTimestamp() - startTime, "WS closed");
 				}
 			};
 
 			ws.onerror = function(evt){
-				var timing = Timer.getTimestamp() - startTime;
-				if(timing < Scan.timingLowerBound || timing > Scan.timingUpperBound){
-					onresult(address, "up", Timer.getTimestamp() - startTime);
-				}
-				else {
-					onresult(address, "down", Timer.getTimestamp() - startTime);
-				}
+				onresult(address, Timer.getTimestamp() - startTime, "WS error event");
 			};
+
+			Scan.socketPool.push(ws);
 
 			/* trigger a manual close after some time, identified by "code" and "reason"
 			 * https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent#Status_codes */
-			var timeout = setTimeout(function(){
+			timeout = setTimeout(function(){
 				ws.close(4999, "NetScan");
 			}, Scan.wsoTimeout);
 
@@ -322,40 +346,29 @@ var NetScan = (function () {
 
 			// TODO: try secure sockets (wss)
 
-			Scan.socketPool.push(ws);
 
-			function onresult(address, status, time){
-				if(!wsResult){
-					clearTimeout(timeout);
-					wsResult = true;
-			
-					Scan.socketPool.splice(Scan.socketPool.indexOf(ws), 1);
-					ws.close();
-					ws = null;
-
-					onResultCB(address, status, time);
-				}
-			}
-
-		} catch(err) {
-			console.log(err);
-			onResultCB(address, err.toString(), 0);
+		} 
+		catch(err) {
+			//console.log(err);
+			handleSingleResult(address, 0, "WS address error: "+ err.toString());
 		}
 	}
 
-	Scan.getHostsWS = function(iprange, cbReturn){
+	Scan.getHostsWS = function(iprange, scanFinishedCB){
 		/* create a connection pool, browsers only support a certain limit of
 		 * simultaneous connections (ff ~200) */	
 		var results = [];
+		var protocol = "ws://";
 		var ips = Util.ipRangeToArray(iprange);
 
-		function resultCB(address, status, time){
-			results.push({ip: address, status: status, time: time});
+		function handleSingleResult(address, timing, info){
+			var status = timing < Scan.timingLowerBound || timing > Scan.timingUpperBound ? "up" : "down";
+			results.push({ip: address, time: timing, status: status, info: info});
 		}
 
 		/* initially fill pool */
 		for(var i = 0; i < Scan.poolCap && ips.length > 0; i++){
-			createConnectionWS("ws://"+ ips.shift(), resultCB);			
+			createConnectionWS(protocol + ips.shift(), handleSingleResult);			
 		}
 
 		/* then regularly check if there is space for new conns */
@@ -363,25 +376,27 @@ var NetScan = (function () {
 			if(ips.length < 1 && Scan.socketPool.length === 0){
 				/* finished */
 				clearInterval(poolMonitor);
+
 				// TODO add/merge/compare results of perf resource timing api
 				
-				cbReturn(results);
+				scanFinishedCB(results);
 			}
 
-			for(; Scan.socketPool.length < Scan.poolCap && ips.length > 0; i++){
-				createConnectionWS(ips.shift(), resultCB);			
+			while(Scan.socketPool.length < Scan.poolCap && ips.length > 0){
+				createConnectionWS(protocol + ips.shift(), handleSingleResult);			
 			}
+
 		}, 50);
 
 	};
 
-	Scan.getHostsFetch = function(iprange, cbReturn){
+	Scan.getHostsFetch = function(iprange, scanFinishedCB){
 
 
 
 	};
 
-	Scan.getHostsLocalNetwork = function(cbReturn, scanFunction = Scan.getHostsWS){
+	Scan.getHostsLocalNetwork = function(scanFinishedCB, scanFunction = Scan.getHostsWS){
 		Scan.getHostIps(function(ips){
 			var toTest = {};
 			var testCount = 0, 
@@ -393,7 +408,7 @@ var NetScan = (function () {
 				all = all.concat(res);
 				testedCount++;
 				if(testedCount === testCount){
-					cbReturn(all);
+					scanFinishedCB(all);
 				}
 			}
 
@@ -414,7 +429,7 @@ var NetScan = (function () {
 	};
 
 
-	Scan.getPorts = function(host, portrange, cb){
+	Scan.getPorts = function(host, portrange, scanFinishedCB){
 		var ports = Util.portRangeToArray(portrange);
 		/* Browser port restrictions, can be found in the fetch spec:
 		 * https://fetch.spec.whatwg.org/#port-blocking 
@@ -426,8 +441,8 @@ var NetScan = (function () {
 		 * - FF: http://www-archive.mozilla.org/projects/netlib/PortBanning.html#portlist 
 		 * a few exceptions exist, depending on a specific protocol, e.g. FTP allows 21 and 22 */
 		// TODO: handle blocked ports
+		var insecure = [1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43, 53, 77, 79, 87, 95, 101, 102, 103, 104, 109, 110, 111, 113, 115, 117, 119, 123, 135, 139, 143, 179, 389, 465, 512, 513, 514, 515, 526, 530, 531, 532, 540, 556, 563, 587, 601, 636, 993, 995, 2049, 3659, 4045, 6000, 6665, 6666, 6667, 6668, 6669];
 
-		// TODO: add default port range, popular services 80, 443, etc
 		var wsBuffer = [];
 		var xhrBuffer = [];
 
@@ -459,32 +474,34 @@ var NetScan = (function () {
 		}, 50);
 
 		function doRequestWS(url, id){
-			createConnectionWS(url, function(address, status, time){
+			createConnectionWS(url, function(address, timing, info){
 				// TODO recompute status based on time...
-				onResultWS(id, address, status, time);
+				onResultWS(id, address, timing, info);
 			});
 		}
 
 		function doRequestXHR(url, id){
-			createConnectionXHR(url, function(address, status, time){
+			createConnectionXHR(url, function(address, timing, info){
 				// TODO recompute status based on time...
-				onResultXHR(id, address, status, time);
+				onResultXHR(id, address, timing, info);
 			});
 		}
 
-		function onResultWS(id, url, status, time){
-			results.push({ip: url, status: status, time: time});
+		function onResultWS(id, address, timing, info){
+			var status = "???"; // TODO
+			results.push({ip: address, time: timing, status: status, info: info});
 			wsBuffer.splice(id, 1);
 			if(results.length === ports.length){
-				cb(results);
+				scanFinishedCB(results);
 			}
 		}
 
-		function onResultXHR(id, url, status, time){
-			results.push({ip: url, status: status, time: time});
+		function onResultXHR(id, address, timing, info){
+			var status = "???"; // TODO
+			results.push({ip: address, time: timing, status: status, info: info});
 			xhrBuffer.splice(id, 1);
 			if(results.length === ports.length){
-				cb(results);
+				scanFinishedCB(results);
 			}
 		}
 

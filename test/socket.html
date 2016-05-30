@@ -34,15 +34,25 @@
 				}
 			}
 		}
+
+		function tabinsert(r) {
+			var table = document.getElementById("tab");
+			
+			for(var i = 0; i < r.length; i++){
+				tab.insertAdjacentHTML("beforeend", 
+					"<tr><td>"+ r[i].ip +"</td><td>"+ r[i].status +"</td><td>"+ r[i].time +"</td><td>"+ r[i].info +"</td></tr>");
+			}
+			
+		}
 		
 /*
 		//NetScan.Scan.getHostsWS("128.130.240.0-255", list);
 		//NetScan.Scan.getHostsWS("192.168.2.0-25", list);
 		NetScan.Scan.getHostsWS("10.0.0.0-255", list);
 */
-		NetScan.Scan.getHostsLocalNetwork(list); // ws is default scan function
+		NetScan.Scan.getHostsLocalNetwork(tabinsert); // ws is default scan function
 	</script>
-
+<!--
 		<h1>html stub for testing</h1>
 		<ul id="up">
 			<li>UP</li>
@@ -50,5 +60,18 @@
 		<ul id="down">
 			<li>DOWN</li>
 		</ul>
+-->
+
+		<h1>html stub for testing</h1>
+		<h3 id="time">processing...</h3>
+		<table id="tab">
+			<tr>
+				<th>ip/port</th>
+				<th>status</th>
+				<th>time</th>
+				<th>info</th>
+			</tr>
+		</table>
+
 	</body>
 </html> 
