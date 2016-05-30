@@ -177,8 +177,15 @@ var NetScan = (function () {
 	Scan.xhrTimeout = 20000;
 	Scan.wsoTimeout = 20000;
 	Scan.portScanBufferSize = 100;
+/*
+	Scan.scanTypes = {
+		WS: 1,
+		XHR: 2,
+		FETCH: 3
+	};
+*/
 
-	Scan.getHostIps = function(cb){
+	Scan.getHostIps = function(cbReturn){
 		Timer.start("getHostIps");
 		var ips = [];
 
@@ -205,12 +212,12 @@ var NetScan = (function () {
 			 * https://developer.mozilla.org/de/docs/Web/API/RTCPeerConnection/onicecandidate */
 			else { 
 				Timer.stop("getHostIps");
-				cb(ips);
 				sendChan.close();
 				conn.close();
 				sendChan = null;
 				conn = null;
 				console.log("getting ip took:", Timer.duration("getHostIps"));
+				cbReturn(ips);
 			}
 		};
 
@@ -257,7 +264,7 @@ var NetScan = (function () {
 		}
 	}
 
-	Scan.getHostsXHR = function(iprange, cb){
+	Scan.getHostsXHR = function(iprange, cbReturn){
 		// TODO use resource timing api
 		// differences in chrome: currently no entries for failed resources, see:
 		// https://bugs.chromium.org/p/chromium/issues/detail?id=460879
@@ -268,12 +275,10 @@ var NetScan = (function () {
 			createConnectionXHR(addresses[i], function(address, status, time){
 				results.push({ip: address, status: status, time: time});
 				if(results.length === addresses.length){
-					cb(results);
+					cbReturn(results);
 				}
 			});
 		}
-
-
 	};
 
 	/* create a single connection */
@@ -331,7 +336,7 @@ var NetScan = (function () {
 		}
 	}
 
-	Scan.getHostsWS = function(iprange, cb){
+	Scan.getHostsWS = function(iprange, cbReturn){
 		/* create a connection pool, browsers only support a certain limit of
 		 * simultaneous connections (ff ~200) */	
 		var results = [];
@@ -353,7 +358,7 @@ var NetScan = (function () {
 				clearInterval(poolMonitor);
 				// TODO add/merge/compare results of perf resource timing api
 				
-				cb(results);
+				cbReturn(results);
 			}
 
 			for(; Scan.socketPool.length < Scan.poolCap && ips.length > 0; i++){
@@ -363,17 +368,27 @@ var NetScan = (function () {
 
 	};
 
-	Scan.getHostsFetch = function(iprange, cb){
+	Scan.getHostsFetch = function(iprange, cbReturn){
 
 
 
 	};
 
-	Scan.getHostsLocalNetwork = function(cb){
+	Scan.getHostsLocalNetwork = function(cbReturn, scanFunction = Scan.getHostsWS){
 		Scan.getHostIps(function(ips){
 			var toTest = {};
 			var testCount = 0, 
 				testedCount = 0;
+			var all = [];
+			
+
+			function resultAccumulator(res){
+				all = all.concat(res);
+				testedCount++;
+				if(testedCount === testCount){
+					cbReturn(all);
+				}
+			}
 
 			for(var i = 0; i < ips.length; i++){
 				if(toTest[ips[i].ip] === undefined){
@@ -382,18 +397,11 @@ var NetScan = (function () {
 				}
 			}
 
-			var all = [];
 			for(var ip in toTest){
 				var tip = Util.ipToArray(ip);
 				tip[3] = "0-255";
 				tip = tip.join(".");
-				Scan.getHostsWS(tip, function(res){
-					all = all.concat(res);
-					testedCount++;
-					if(testedCount === testCount){
-						cb(all);
-					}
-				});
+				scanFunction(tip, resultAccumulator);
 			}
 		});
 	};
@@ -401,7 +409,13 @@ var NetScan = (function () {
 
 	Scan.getPorts = function(host, portrange, cb){
 		var ports = Util.portRangeToArray(portrange);
-		// TODO: check for port restrictions
+		/* Browser port restrictions, can be found in the fetch spec:
+		 * https://fetch.spec.whatwg.org/#port-blocking 
+		 * those seem to be enforced to websockets, fetch 
+		 * The specific list can be found at:
+		 * - CHROME/CHROMIUM: https://src.chromium.org/viewvc/chrome/trunk/src/net/base/net_util.cc?view=markup 
+		 * - FF: http://www-archive.mozilla.org/projects/netlib/PortBanning.html#portlist 
+		 * a few exceptions exist, depending on a specific protocol, e.g. FTP allows 21 and 22 */
 		// TODO: add default port range, popular services 80, 443, etc
 		var wsBuffer = [];
 		var xhrBuffer = [];
