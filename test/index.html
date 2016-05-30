@@ -23,7 +23,7 @@
 			var table = document.getElementById("tab");
 			
 			for(var i = 0; i < r.length; i++){
-				tab.insertAdjacentHTML("beforeend", "<tr><td>"+ r[i].ip +"</td><td>"+ r[i].status +"</td></tr>");
+				tab.insertAdjacentHTML("beforeend", "<tr><td>"+ r[i].ip +"</td><td>"+ r[i].status +"</td><td>"+ r[i].time +"</td></tr>");
 			}
 			
 		}
@@ -40,10 +40,7 @@
 			<tr>
 				<th>ip/port</th>
 				<th>status</th>
-			</tr>
-			<tr>
-				<td>a</td>
-				<td>b</td>
+				<th>time</th>
 			</tr>
 		</table>
 

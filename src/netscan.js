@@ -70,7 +70,7 @@ var NetScan = (function () {
 	 * candidate | rtp (1)/rtcp (2) | protocol (udp/tcp) | priority 	| ip				| port		| type (host/srflx/relay)
 	 */
 	
-	function Util(){};
+	function Util(){}
 
 	Util.extractConnectionInfo = function(candidate){
 		var host = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate);
@@ -78,12 +78,12 @@ var NetScan = (function () {
 			return {type: "host", ip: host[1], port: host[2], public_ip: null, public_port: null};
 		}
 
-		var srflx = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ srflx raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate)
+		var srflx = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ srflx raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
 		if(srflx !== null && srflx.length === 5){
 			return {type: "srflx", ip: srflx[3], port: srflx[4], public_ip: srflx[1], public_port: srflx[2]};
 		}
 
-		var relay = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ relay raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate)
+		var relay = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ relay raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
 		if(relay !== null && relay.length === 5){
 			return {type: "relay", ip: relay[3], port: relay[4], public_ip: relay[1], public_port: relay[2]};
 		}
@@ -168,7 +168,7 @@ var NetScan = (function () {
 
 	/**********************************/
 
-	function Scan(){};
+	function Scan(){}
 
 	Scan.socketPool = [];
 	Scan.poolCap = 130;
@@ -418,11 +418,14 @@ var NetScan = (function () {
 		var ports = Util.portRangeToArray(portrange);
 		/* Browser port restrictions, can be found in the fetch spec:
 		 * https://fetch.spec.whatwg.org/#port-blocking 
-		 * those seem to be enforced to websockets, fetch 
+		 * those seem to be enforced to websockets, fetch but not xhr
+		 * creating a websocket will instantly fail with an exception, 
+		 * a xhr will succeed, unsafe ports only get reported in the console...
 		 * The specific list can be found at:
 		 * - CHROME/CHROMIUM: https://src.chromium.org/viewvc/chrome/trunk/src/net/base/net_util.cc?view=markup 
 		 * - FF: http://www-archive.mozilla.org/projects/netlib/PortBanning.html#portlist 
 		 * a few exceptions exist, depending on a specific protocol, e.g. FTP allows 21 and 22 */
+		// TODO: handle blocked ports
 
 		// TODO: add default port range, popular services 80, 443, etc
 		var wsBuffer = [];
@@ -434,41 +437,51 @@ var NetScan = (function () {
 		var monitor = setInterval(function(){
 			var url;
 			if(id < ports.length){
-				while(wsBuffer.length < Scan.portScanBufferSize){
+/*
+				while(wsBuffer.length < Scan.portScanBufferSize 
+				&& id < ports.length){
 					url = "ws://"+ host +":"+ ports[id];
 					wsBuffer.push(doRequestWS(url, id));
 					id++;
 				}
-/*
-				while(xhrBuffer.length < Scan.portScanBufferSize){
+*/
+				while(xhrBuffer.length < Scan.portScanBufferSize
+				&& id < ports.length){
 					url = "http://"+ host +":"+ ports[id];
 					xhrBuffer.push(doRequestXHR(url, id));
 					id++;
 				}
-*/
+
+			}
+			else {				
+				clearInterval(monitor);
 			}
 		}, 50);
 
 		function doRequestWS(url, id){
 			createConnectionWS(url, function(address, status, time){
-				onResultWS(id, url, status);
+				// TODO recompute status based on time...
+				onResultWS(id, address, status, time);
 			});
 		}
 
 		function doRequestXHR(url, id){
-			
+			createConnectionXHR(url, function(address, status, time){
+				// TODO recompute status based on time...
+				onResultXHR(id, address, status, time);
+			});
 		}
 
-		function onResultWS(id, url, status){
-			results.push({ip: url, status: status});
+		function onResultWS(id, url, status, time){
+			results.push({ip: url, status: status, time: time});
 			wsBuffer.splice(id, 1);
 			if(results.length === ports.length){
 				cb(results);
 			}
 		}
 
-		function onResultXHR(id, url, status){
-			results.push({ip: url, status: status});
+		function onResultXHR(id, url, status, time){
+			results.push({ip: url, status: status, time: time});
 			xhrBuffer.splice(id, 1);
 			if(results.length === ports.length){
 				cb(results);
