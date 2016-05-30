@@ -58,7 +58,7 @@
 	<svg xmlns="http://www.w3.org/2000/svg" version="1.1">
 		<defs>
 			<filter id="filtereffect" x="0" y="0">
-
+<!--
   <feMorphology radius="6" operator="dilate" in="SourceGraphic" />
   <feComponentTransfer>
     <feFuncR type="table" tableValues="1 0.5"/>
@@ -145,9 +145,9 @@
 	<feDistantLight azimuth="90" elevation="20" />
 </feSpecularLighting>
 <feComposite in="scene" in2="highlights" operator="xor"/>
+-->
 
 
-<!--
 <feColorMatrix type="matrix" values="1 0 0 0 0
                                      0 1 0 0 0
                                      0 0 1 0 0
@@ -156,15 +156,49 @@
 <feColorMatrix type="matrix" values="0 1 1 0 0
                                      1 0 1 0 0
                                      1 1 0 0 0
-                                     1 1 1 0 0" result="colorToAlpha" />
+                                     1 1 1 0 0" result="colorToAlpha2" />
 
 <feColorMatrix type="matrix" values="0 0 0 0 0
                                      0 0 0 0 0
                                      0 0 0 0 0
-                                     1 1 1 0 0" result="colorToAlpha" />
+                                     1 1 1 0 0" result="colorToAlpha3" />
+
+<feTurbulence type="fractalNoise" baseFrequency="0.017" numOctaves="1" result="warp" />
+<feComposite in="colorToAlpha" in2="warp" operator="arithmetic" k1="1" result="map" />
 
 
+<feDisplacementMap xChannelSelector="R" yChannelSelector="G" scale="50" in="SourceGraphic" in2="map" result="r1" />
+<feDisplacementMap xChannelSelector="R" yChannelSelector="G" scale="50" in="SourceGraphic" in2="map" result="r2" />
+<feDisplacementMap xChannelSelector="R" yChannelSelector="G" scale="50" in="SourceGraphic" in2="map" result="r3" />
 
+<feMerge>
+    <feMergeNode in="r1"/>
+	<feMergeNode in="r2"/>
+	<feMergeNode in="r3"/>
+</feMerge>
+
+<!--
+<feDisplacementMap xChannelSelector="R" yChannelSelector="B" scale="50" in="SourceGraphic" in2="colorToAlpha" result="r4" />
+<feDisplacementMap xChannelSelector="R" yChannelSelector="B" scale="50" in="SourceGraphic" in2="colorToAlpha2" result="r5" />
+<feDisplacementMap xChannelSelector="R" yChannelSelector="B" scale="50" in="SourceGraphic" in2="colorToAlpha3" result="r6" />
+
+<feDisplacementMap xChannelSelector="G" yChannelSelector="B" scale="50" in="SourceGraphic" in2="colorToAlpha" result="r7" />
+<feDisplacementMap xChannelSelector="G" yChannelSelector="B" scale="50" in="SourceGraphic" in2="colorToAlpha2" result="r8" />
+<feDisplacementMap xChannelSelector="G" yChannelSelector="B" scale="50" in="SourceGraphic" in2="colorToAlpha3" result="r9" />
+
+<feMerge>
+    <feMergeNode in="r1"/>
+	<feMergeNode in="r2"/>
+	<feMergeNode in="r3"/>
+    <feMergeNode in="r4"/>
+	<feMergeNode in="r5"/>
+	<feMergeNode in="r6"/>
+    <feMergeNode in="r7"/>
+	<feMergeNode in="r8"/>
+	<feMergeNode in="r9"/>
+</feMerge>
+-->
+<!--
 <feComponentTransfer result="terrain">
 	<feFuncA type="table" tableValues="1 0"/>
 </feComponentTransfer>

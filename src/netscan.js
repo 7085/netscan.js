@@ -178,8 +178,8 @@ var NetScan = (function () {
 	Scan.wsoTimeout = 20000;
 	Scan.portScanBufferSize = 100;
 
-	Scan.getIps = function(cb){
-		Timer.start("getIps");
+	Scan.getHostIps = function(cb){
+		Timer.start("getHostIps");
 		var ips = [];
 
 		var serverConfig = {
@@ -204,13 +204,13 @@ var NetScan = (function () {
 			/* at this state (evt.candidate == null) we are finished, see:
 			 * https://developer.mozilla.org/de/docs/Web/API/RTCPeerConnection/onicecandidate */
 			else { 
-				Timer.stop("getIps");
+				Timer.stop("getHostIps");
 				cb(ips);
 				sendChan.close();
 				conn.close();
 				sendChan = null;
 				conn = null;
-				console.log("getting ip took:", Timer.duration("getIps"));
+				console.log("getting ip took:", Timer.duration("getHostIps"));
 			}
 		};
 
@@ -232,56 +232,118 @@ var NetScan = (function () {
 				function(error){/* dont care */});
 		}
 	};
-	
+
+		
+	function createConnectionXHR(address, onResultCB){
+		try {
+			var x = new XMLHttpRequest();
+			var startTime = 0;
+			x.onreadystatechange = function(){
+				console.log(x.readyState, x.getAllResponseHeaders());
+				if(x.readyState === 4){
+					var time = Timer.getTimestamp() - startTime;
+					var status = time < Scan.timingLowerBound || time > Scan.timingUpperBound ? "up" : "down";
+					console.log(time);
+					onResultCB(address, status, time);
+				}
+			};
+			x.open("HEAD", "http://"+ address, true);
+			x.timeout = Scan.xhrTimeout;
+
+			startTime = Timer.getTimestamp();			
+			x.send();
+		} catch (err){
+			console.log(err);
+		}
+	}
+
 	Scan.getHostsXHR = function(iprange, cb){
 		// TODO use resource timing api
 		// differences in chrome: currently no entries for failed resources, see:
 		// https://bugs.chromium.org/p/chromium/issues/detail?id=460879
 		var results = [];
-		var ips = Util.ipRangeToArray(iprange);
-		var startTime = 0;
+		var addresses = Util.ipRangeToArray(iprange);
 		
-		for(var i = 0; i < ips.length; i++){
-			createConnection(ips[i]);
+		for(var i = 0; i < addresses.length; i++){
+			createConnectionXHR(addresses[i], function(address, status, time){
+				results.push({ip: address, status: status, time: time});
+				if(results.length === addresses.length){
+					cb(results);
+				}
+			});
 		}
 
-		function createConnection(ip){
-			try {
-				var x = new XMLHttpRequest();
-				x.onreadystatechange = function(){
-					console.log(x.readyState, x.getAllResponseHeaders());
-					if(x.readyState === 4){
-						var time = Timer.getTimestamp() - startTime;
-						var status = time < Scan.timingLowerBound || time > Scan.timingUpperBound ? "up" : "down";
-						console.log(time);
-						results.push({ip: ip, status: status, time: time});
-						if(results.length === ips.length){
-							cb(results);
-						}
-					}
-				};
-				x.open("HEAD", "http://"+ ips[i], true);
-				x.timeout = Scan.xhrTimeout;
 
-				startTime = Timer.getTimestamp();			
-				x.send();
-			} catch (err){
-				console.log(err);
+	};
+
+	/* create a single connection */
+	function createConnectionWS(ip, onResultCB){
+		var startTime = Timer.getTimestamp();
+		var ws = new WebSocket("ws://"+ ip +"/");
+		var wsResult = false;
+
+		ws.onopen = function(evt){
+			onresult(ip, "up", Timer.getTimestamp() - startTime);
+		};
+
+		ws.onclose = function(/*CloseEvent*/ evt){
+			if(evt.code === 4999 && evt.reason === "NetScan"){
+				onresult(ip, "up", Timer.getTimestamp() - startTime);
+			}
+			else {
+				onresult(ip, "down", Timer.getTimestamp() - startTime);
+			}
+		};
+
+		ws.onerror = function(evt){
+			var timing = Timer.getTimestamp() - startTime;
+			if(timing < Scan.timingLowerBound || timing > Scan.timingUpperBound){
+				onresult(ip, "up", Timer.getTimestamp() - startTime);
+			}
+			else {
+				onresult(ip, "down", Timer.getTimestamp() - startTime);
+			}
+		};
+
+		/* trigger a manual close after some time, identified by "code" and "reason"
+		 * https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent#Status_codes */
+		var timeout = setTimeout(function(){
+			ws.close(4999, "NetScan");
+		}, Scan.wsoTimeout);
+
+		// TODO: handle blocking of http authentication (in FF)
+
+		// TODO: try secure sockets (wss)
+
+		Scan.socketPool.push(ws);
+	
+		function onresult(ip, status, time){
+			if(!wsResult){
+				clearTimeout(timeout);
+				wsResult = true;
+				
+				Scan.socketPool.splice(Scan.socketPool.indexOf(ws), 1);
+				ws.close();
+				ws = null;
+
+				onResultCB(ip, status, time);
 			}
 		}
-	};
+	}
 
 	Scan.getHostsWS = function(iprange, cb){
 		/* create a connection pool, browsers only support a certain limit of
-		 * simultaneous connections */	
-		//var poolCap = 50;	
-		//var socketPool = [];
+		 * simultaneous connections (ff ~200) */	
 		var results = [];
 		var ips = Util.ipRangeToArray(iprange);
 
+		function resultCB(address, status, time){
+			results.push({ip: address, status: status, time: time});
+		}
+
 		/* initially fill pool */
 		for(var i = 0; i < Scan.poolCap && ips.length > 0; i++){
-			createConnection(ips.shift());			
+			createConnectionWS(ips.shift(), resultCB);			
 		}
 
 		/* then regularly check if there is space for new conns */
@@ -295,69 +357,20 @@ var NetScan = (function () {
 			}
 
 			for(; Scan.socketPool.length < Scan.poolCap && ips.length > 0; i++){
-				createConnection(ips.shift());			
+				createConnectionWS(ips.shift(), resultCB);			
 			}
 		}, 50);
 
-		/* create a single connection */
-		function createConnection(ip){
-			var startTime = Timer.getTimestamp();
-			var ws = new WebSocket("ws://"+ ip +"/");
-			var wsResult = false;
+	};
 
-			ws.onopen = function(evt){
-				onresult(ip, "up", Timer.getTimestamp() - startTime);
-			};
+	Scan.getHostsFetch = function(iprange, cb){
 
-			ws.onclose = function(/*CloseEvent*/ evt){
-				if(evt.code === 4999 && evt.reason === "NetScan"){
-					onresult(ip, "up", Timer.getTimestamp() - startTime);
-				}
-				else {
-					onresult(ip, "down", Timer.getTimestamp() - startTime);
-				}
-			};
 
-			ws.onerror = function(evt){
-				var timing = Timer.getTimestamp() - startTime;
-				if(timing < Scan.timingLowerBound || timing > Scan.timingUpperBound){
-					onresult(ip, "up", Timer.getTimestamp() - startTime);
-				}
-				else {
-					onresult(ip, "down", Timer.getTimestamp() - startTime);
-				}
-			};
 
-			/* trigger a manual close after some time, identified by "code" and "reason"
-			 * https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent#Status_codes */1
-			var timeout = setTimeout(function(){
-				ws.close(4999, "NetScan");
-			}, Scan.wsoTimeout);
-
-			// TODO: evaluate if an additional timeout improves scan time, while not wasting result accuracy
-
-			// TODO: handle blocking of http authentication (in FF)
-
-			// TODO: try secure sockets (wss)
-
-			Scan.socketPool.push(ws);
-		
-			function onresult(ip, status, time){
-				if(!wsResult){
-					clearTimeout(timeout);
-					wsResult = true;
-					results.push({ip: ip, status: status, time: time});
-					
-					Scan.socketPool.splice(Scan.socketPool.indexOf(ws), 1);
-					ws.close();
-					ws = null;
-				}
-			}
-		}
 	};
 
 	Scan.getHostsLocalNetwork = function(cb){
-		Scan.getIps(function(ips){
+		Scan.getHostIps(function(ips){
 			var toTest = {};
 			var testCount = 0, 
 				testedCount = 0;
@@ -389,7 +402,7 @@ var NetScan = (function () {
 	Scan.getPorts = function(host, portrange, cb){
 		var ports = Util.portRangeToArray(portrange);
 		// TODO: check for port restrictions
-		
+		// TODO: add default port range, popular services 80, 443, etc
 		var wsBuffer = [];
 		var xhrBuffer = [];
 
@@ -441,7 +454,7 @@ var NetScan = (function () {
 
 	/**********************************/
 
-
+	
 
 
 	return T;
