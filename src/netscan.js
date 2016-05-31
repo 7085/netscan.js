@@ -462,6 +462,16 @@ var NetScan = (function () {
 			});
 		}
 
+		/*	
+			Timings gathered (active host):
+			# chromium
+			- port not open (net::ERR_CONNECTION_REFUSED): 5-31 ms
+			- port closed after open (net::ERR_EMPTY_RESPONSE): 5-14 ms, no significance
+			- port closed with msg: 5-14ms, slightly slower than closed ports, about ~1ms
+			- port open no resp: hangs until timeout
+			- port open w/ resp: higher thant closed ones, about ~1-2ms
+
+		*/
 		function onResultXHR(address, timing, info){
 			var status = "???"; // TODO
 			if(info === "BLOCKED"){
