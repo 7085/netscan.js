@@ -394,29 +394,36 @@ var NetScan = (function () {
 	function createConnectionFetch(address, handleSingleResult){
 		var config = {
 			method: "GET",
+			/**	
+			 *	This will make an "opaque" request, so we will
+			 *	know when HTTP is understood by the remote host.
+			 *	CORS requests will succeed and the response gets
+			 *	"nulled".
+			 **/
 			mode: "no-cors",
+			/* Always make real requests, don't use the cache. */
 			cache: "no-store"
 		};
 		var startTime = Timer.getTimestamp();
 
 		var timeout = new Promise((resolve, reject) => {
-			setTimeout(() => resolve("fetchTimeout triggered"), Scan.fetchTimeout);
+			setTimeout(() => reject("fetchTimeout triggered"), Scan.fetchTimeout);
 		});
 
-		var f = fetch(address, config);
+		var requ = fetch(address, config);
 
-		var p = Promise.race([timeout, f]);
+		var p = Promise.race([timeout, requ]);
 		p.then((resp) => {
 			console.log(resp.headers);
-			console.log(resp.ok, resp.status, resp.statusText);
+			console.log(resp.type, resp.ok, resp.status, resp.statusText);
 			resp.text().then((body) => {
 				console.log(body);
 			});
-			handleSingleResult(address, Timer.getTimestamp() - startTime, resp.status);
-		});
-		p.catch(/* TypeError */ err => {
-			console.log(err);
-			handleSingleResult(address, Timer.getTimestamp() - startTime, "Network Error: "+ err.toString());
+			handleSingleResult(address, Timer.getTimestamp() - startTime, "HTTP available");
+		})
+		.catch(/* TypeError */ err => {
+			//console.log(err);
+			handleSingleResult(address, Timer.getTimestamp() - startTime, "network error: "+ err.message);
 		});
 	}
 
@@ -484,8 +491,14 @@ var NetScan = (function () {
 		 * - CHROME/CHROMIUM: https://src.chromium.org/viewvc/chrome/trunk/src/net/base/net_util.cc?view=markup 
 		 * - FF: http://www-archive.mozilla.org/projects/netlib/PortBanning.html#portlist 
 		 * a few exceptions exist, depending on a specific protocol, e.g. FTP allows 21 and 22 */
-		// TODO: handle blocked ports
-		var blocked = [1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43, 53, 77, 79, 87, 95, 101, 102, 103, 104, 109, 110, 111, 113, 115, 117, 119, 123, 135, 139, 143, 179, 389, 465, 512, 513, 514, 515, 526, 530, 531, 532, 540, 556, 563, 587, 601, 636, 993, 995, 2049, 3659, 4045, 6000, 6665, 6666, 6667, 6668, 6669];
+		var blocked = [
+			1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 
+			42, 43, 53, 77, 79, 87, 95, 101, 102, 103, 104, 109, 
+			110, 111, 113, 115, 117, 119, 123, 135, 139, 143, 179, 
+			389, 465, 512, 513, 514, 515, 526, 530, 531, 532, 540, 
+			556, 563, 587, 601, 636, 993, 995, 2049, 3659, 4045, 
+			6000, 6665, 6666, 6667, 6668, 6669
+		];
 
 		var results = [];		
 
