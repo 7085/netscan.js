@@ -176,6 +176,7 @@ var NetScan = (function () {
 	Scan.timingUpperBound = 10000;
 	Scan.xhrTimeout = 20000;
 	Scan.wsoTimeout = 20000;
+	Scan.fetchTimeout = 20000;
 	Scan.portScanBufferSize = 100;
 	// TODO separate timing bounds for ws and xhr
 /*
@@ -246,7 +247,7 @@ var NetScan = (function () {
 		number timing
 		string info
 	 */
-	function createConnectionXHR(address, handleResultCB){
+	function createConnectionXHR(address, handleSingleResult){
 		try {
 			var x = new XMLHttpRequest();
 			var startTime = 0;
@@ -256,7 +257,7 @@ var NetScan = (function () {
 					var timing = Timer.getTimestamp() - startTime;
 					//var status = time < Scan.timingLowerBound || time > Scan.timingUpperBound ? "up" : "down";
 					//console.log(time);
-					handleResultCB(address, timing, "");
+					handleSingleResult(address, timing, "");
 				}
 			};
 			x.open("HEAD", address, true);
@@ -267,7 +268,7 @@ var NetScan = (function () {
 		} 
 		catch (err){
 			console.log(err);
-			handleResultCB(address, 0, err.toString());
+			handleSingleResult(address, 0, err.toString());
 		}
 	}
 
@@ -390,10 +391,53 @@ var NetScan = (function () {
 
 	};
 
+	function createConnectionFetch(address, handleSingleResult){
+		var config = {
+			method: "GET",
+			mode: "no-cors",
+			cache: "no-store"
+		};
+		var startTime = Timer.getTimestamp();
+
+		var timeout = new Promise((resolve, reject) => {
+			setTimeout(() => resolve("fetchTimeout triggered"), Scan.fetchTimeout);
+		});
+
+		var f = fetch(address, config);
+
+		var p = Promise.race([timeout, f]);
+		p.then((resp) => {
+			console.log(resp.headers);
+			console.log(resp.ok, resp.status, resp.statusText);
+			resp.text().then((body) => {
+				console.log(body);
+			});
+			handleSingleResult(address, Timer.getTimestamp() - startTime, resp.status);
+		});
+		p.catch(/* TypeError */ err => {
+			console.log(err);
+			handleSingleResult(address, Timer.getTimestamp() - startTime, "Network Error: "+ err.toString());
+		});
+	}
+
 	Scan.getHostsFetch = function(iprange, scanFinishedCB){
+		var results = [];
+		var protocol = "http://";
+		var addresses = Util.ipRangeToArray(iprange);
 
+		function handleSingleResult(address, timing, info){
+			var status = timing < Scan.timingLowerBound || timing > Scan.timingUpperBound ? "up" : "down";
+			results.push({ip: address, time: timing, status: status, info: info});
 
-
+			/* last result received, return */
+			if(results.length === addresses.length){
+				scanFinishedCB(results);
+			}
+		}
+		
+		for(var i = 0; i < addresses.length; i++){
+			createConnectionFetch(protocol + addresses[i], handleSingleResult);
+		}
 	};
 
 	Scan.getHostsLocalNetwork = function(scanFinishedCB, scanFunction = Scan.getHostsWS){
