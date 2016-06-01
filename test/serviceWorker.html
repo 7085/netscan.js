@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>test</title>
+	</head>
+	<body>
+		<script src="../src/netscan.js"></script>
+		<script>
+						
+			navigator.serviceWorker.register("serviceWorker.js", {scope: './'})
+			.then((registration) => {
+				console.log("reg success");
+			})
+			.catch((error) => {
+				console.log("reg failed: " + error);
+			});
+			
+			
+			setTimeout(() => {
+				fetch("https://www.w3.org/TR/resource-timing/", {method: "GET", mode: "no-cors"})
+				.then((resp) => {
+					console.log(resp.headers);
+					console.log(resp.type, resp.ok, resp.status, resp.statusText);
+					resp.text().then((body) => {
+						console.log(body);
+					});
+				})
+				.catch(err => {
+					console.log(err);
+				});
+			}, 500);
+
+		</script>
+
+
+	</body>
+</html> 
