@@ -242,12 +242,13 @@ var NetScan = (function () {
 		}
 	};
 
+
 	/* handleResultCB:
 		string address
 		number timing
 		string info
 	 */
-	function createConnectionXHR(address, handleSingleResult){
+	Scan.createConnectionXHR = function(address, handleSingleResult){
 		try {
 			var x = new XMLHttpRequest();
 			var startTime = 0;
@@ -267,10 +268,11 @@ var NetScan = (function () {
 			x.send();
 		} 
 		catch (err){
-			console.log(err);
+			//console.log(err);
 			handleSingleResult(address, 0, err.toString());
 		}
 	}
+
 
 	Scan.getHostsXHR = function(iprange, scanFinishedCB){
 		// TODO use resource timing api
@@ -282,7 +284,12 @@ var NetScan = (function () {
 
 		function handleSingleResult(address, timing, info){
 			var status = timing < Scan.timingLowerBound || timing > Scan.timingUpperBound ? "up" : "down";
-			results.push({ip: address, time: timing, status: status, info: info});
+			results.push({
+				ip: address, 
+				time: timing, 
+				status: status, 
+				info: info
+			});
 
 			/* last result received, return */
 			if(results.length === addresses.length){
@@ -291,12 +298,13 @@ var NetScan = (function () {
 		}
 		
 		for(var i = 0; i < addresses.length; i++){
-			createConnectionXHR(protocol + addresses[i], handleSingleResult);
+			Scan.createConnectionXHR(protocol + addresses[i], handleSingleResult);
 		}
 	};
 
+
 	/* create a single connection */
-	function createConnectionWS(address, handleSingleResult){
+	Scan.createConnectionWS = function(address, handleSingleResult){
 		var startTime = Timer.getTimestamp();
 		var wsResult = false;
 		var timeout,
@@ -355,6 +363,7 @@ var NetScan = (function () {
 		}
 	}
 
+
 	Scan.getHostsWS = function(iprange, scanFinishedCB){
 		/* create a connection pool, browsers only support a certain limit of
 		 * simultaneous connections (ff ~200) */	
@@ -364,12 +373,17 @@ var NetScan = (function () {
 
 		function handleSingleResult(address, timing, info){
 			var status = timing < Scan.timingLowerBound || timing > Scan.timingUpperBound ? "up" : "down";
-			results.push({ip: address, time: timing, status: status, info: info});
+			results.push({
+				ip: address, 
+				time: timing, 
+				status: status, 
+				info: info
+			});
 		}
 
 		/* initially fill pool */
 		for(var i = 0; i < Scan.poolCap && ips.length > 0; i++){
-			createConnectionWS(protocol + ips.shift(), handleSingleResult);			
+			Scan.createConnectionWS(protocol + ips.shift(), handleSingleResult);			
 		}
 
 		/* then regularly check if there is space for new conns */
@@ -384,14 +398,15 @@ var NetScan = (function () {
 			}
 
 			while(Scan.socketPool.length < Scan.poolCap && ips.length > 0){
-				createConnectionWS(protocol + ips.shift(), handleSingleResult);			
+				Scan.createConnectionWS(protocol + ips.shift(), handleSingleResult);			
 			}
 
 		}, 50);
 
 	};
 
-	function createConnectionFetch(address, handleSingleResult){
+
+	Scan.createConnectionFetch = function(address, handleSingleResult){
 		var config = {
 			method: "GET",
 			/**	
@@ -427,6 +442,7 @@ var NetScan = (function () {
 		});
 	}
 
+
 	Scan.getHostsFetch = function(iprange, scanFinishedCB){
 		var results = [];
 		var protocol = "http://";
@@ -434,7 +450,12 @@ var NetScan = (function () {
 
 		function handleSingleResult(address, timing, info){
 			var status = timing < Scan.timingLowerBound || timing > Scan.timingUpperBound ? "up" : "down";
-			results.push({ip: address, time: timing, status: status, info: info});
+			results.push({
+				ip: address, 
+				time: timing, 
+				status: status, 
+				info: info
+			});
 
 			/* last result received, return */
 			if(results.length === addresses.length){
@@ -443,9 +464,10 @@ var NetScan = (function () {
 		}
 		
 		for(var i = 0; i < addresses.length; i++){
-			createConnectionFetch(protocol + addresses[i], handleSingleResult);
+			Scan.createConnectionFetch(protocol + addresses[i], handleSingleResult);
 		}
 	};
+
 
 	Scan.getHostsLocalNetwork = function(scanFinishedCB, scanFunction = Scan.getHostsWS){
 		Scan.getHostIps(function(ips){
@@ -514,7 +536,7 @@ var NetScan = (function () {
 		}
 
 		function doRequestXHR(url){
-			createConnectionXHR(url, function(address, timing, info){
+			Scan.createConnectionXHR(url, function(address, timing, info){
 				onResultXHR(address, timing, info);
 			});
 		}
@@ -536,7 +558,12 @@ var NetScan = (function () {
 				info = "Port is blocked by browser.";
 			}
 
-			results.push({ip: address, time: timing, status: status, info: info});
+			results.push({
+				ip: address, 
+				time: timing, 
+				status: status, 
+				info: info
+			});
 
 			if(results.length === ports.length){
 				scanFinishedCB(results);
