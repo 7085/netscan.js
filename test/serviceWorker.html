@@ -32,13 +32,14 @@
 				});
 			}
 
-						
+			
+			var url = "https://www.w3.org/TR/resource-timing/";			
 			navigator.serviceWorker.register("serviceWorker.js", {scope: './'})
 			.then((registration) => {
 				console.log("reg success");
 				
 				setTimeout(() => {
-					fetch("https://www.w3.org/TR/resource-timing/", {method: "GET", mode: "no-cors"})
+					fetch(url, {method: "GET", mode: "no-cors", cache: "no-store"})
 					.then((resp) => {
 						console.log("received response:", resp);
 						resp.text().then((body) => {
@@ -54,14 +55,14 @@
 				
 				
 				setTimeout(() => {
-					sendMessage({url:"https://www.w3.org/TR/resource-timing/"})
+					sendMessage({url: url})
 					.then((resp) => {
-						console.log(resp);
+						console.log("main:", resp);
 					})
 					.catch(err => {
-						console.log(err);
+						console.log("main err:", err);
 					});
-				}, 1000);
+				}, 2000);
 				
 			})
 			.catch((error) => {
