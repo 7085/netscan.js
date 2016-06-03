@@ -422,7 +422,7 @@ var NetScan = (function () {
 		var startTime = Timer.getTimestamp();
 
 		var timeout = new Promise((resolve, reject) => {
-			setTimeout(() => reject("fetchTimeout triggered"), Scan.fetchTimeout);
+			setTimeout(() => reject(new Error("fetchTimeout triggered")), Scan.fetchTimeout);
 		});
 
 		var requ = fetch(address, config);
