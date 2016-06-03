@@ -250,21 +250,46 @@ var NetScan = (function () {
 	 */
 	Scan.createConnectionXHR = function(address, handleSingleResult){
 		try {
-			var x = new XMLHttpRequest();
 			var startTime = 0;
+			var lastChangeTime = 0;
+			var diff = 0;
+			var info = "";
+			
+			var x = new XMLHttpRequest();
+			x.timeout = Scan.xhrTimeout;
+			
 			x.onreadystatechange = function(){
-				//console.log(x.readyState, x.getAllResponseHeaders());
-				if(x.readyState === 4){
-					var timing = Timer.getTimestamp() - startTime;
-					//var status = time < Scan.timingLowerBound || time > Scan.timingUpperBound ? "up" : "down";
-					//console.log(time);
-					handleSingleResult(address, timing, "");
+				switch (x.readyState) {
+					case 2: // HEADERS_RECEIVED
+						diff = Timer.getTimestamp() - lastChangeTime;
+						lastChangeTime = Timer.getTimestamp();
+						info += diff + "::";
+						break;
+						
+					case 3: // LOADING
+						diff = Timer.getTimestamp() - lastChangeTime;
+						lastChangeTime = Timer.getTimestamp();
+						info += diff + "::";
+						break;
+						
+					case 4: // DONE
+						diff = Timer.getTimestamp() - lastChangeTime;
+						lastChangeTime = Timer.getTimestamp();
+						info += diff;
+						
+						var timing = lastChangeTime - startTime;
+						handleSingleResult(address, timing, info);
+						break;
+						
+					default:
+						/* we don't care about other states (OPENED, UNSENT) */
+						break;
 				}
 			};
-			x.open("HEAD", address, true);
-			x.timeout = Scan.xhrTimeout;
-
-			startTime = Timer.getTimestamp();			
+			
+			startTime = lastChangeTime = Timer.getTimestamp();
+			
+			x.open("HEAD", address, true);			
 			x.send();
 		} 
 		catch (err){
