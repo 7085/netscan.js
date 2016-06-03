@@ -469,7 +469,7 @@ var NetScan = (function () {
 	};
 
 
-	Scan.getHostsLocalNetwork = function(scanFinishedCB, scanFunction = Scan.getHostsWS){
+	Scan.getHostsLocalNetwork = function(scanFinishedCB, scanFunction = Scan.getHostsFetch){
 		Scan.getHostIps(function(ips){
 			var toTest = {};
 			var testCount = 0, 
@@ -522,7 +522,7 @@ var NetScan = (function () {
 			6000, 6665, 6666, 6667, 6668, 6669
 		];
 
-		var results = [];		
+		var results = [];
 
 		for(var i = 0; i < ports.length; i++){
 			var url = "http://"+ host +":"+ ports[i];

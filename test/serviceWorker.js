@@ -30,10 +30,10 @@ this.addEventListener("fetch", function (event) {
 		caches.match(event.request.url)
 		.then((response) => {
 			console.log("cached response", response.clone());
-			return response;
+			return response.clone();
 		})
 		.catch(() => {
-			return fetch(event.request.url, {method: "GET", mode: "no-cors", cache: "no-store"})
+			fetch(event.request.url, {method: "GET", mode: "no-cors"}) //{method: "GET", mode: "no-cors", cache: "no-store"}
 			.then(function (response) {
 				console.log("fetched response", response.clone());
 				
@@ -48,6 +48,7 @@ this.addEventListener("fetch", function (event) {
 			})
 			.catch(function (error) {
 				console.error("fetch failed", error);
+				throw error;
 			});
 		})
 	);
