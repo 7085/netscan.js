@@ -168,6 +168,14 @@ var NetScan = (function () {
 
 	/**********************************/
 
+	function ScanResult(){
+		// TODO
+	}
+	
+	ScanResult.prototype.toString = function(){
+		
+	}
+
 	function Scan(){}
 
 	Scan.socketPool = [];
@@ -179,14 +187,15 @@ var NetScan = (function () {
 	Scan.fetchTimeout = 20000;
 	Scan.portScanBufferSize = 100;
 	// TODO separate timing bounds for ws and xhr
-/*
-	Scan.scanTypes = {
-		WS: 1,
-		XHR: 2,
-		FETCH: 3
-	};
-*/
 
+
+	/**
+	 * Retrieves all private and public ip address
+	 * and ports assigned to the current host.
+	 * @param Function cbReturn
+	 * 	Gets a list of ip and port combinations which were
+	 * 	found in the gathering process.
+	 */
 	Scan.getHostIps = function(cbReturn){
 		Timer.start("getHostIps");
 		var ips = [];
@@ -243,10 +252,15 @@ var NetScan = (function () {
 	};
 
 
-	/* handleResultCB:
-		string address
-		number timing
-		string info
+	/**
+	 * Creates a single connection by using a XMLHttpRequest.
+	 * @param String address The address to scan.
+	 * @param Function handleSingleResult A Function which will get the 
+	 * result information through following parameters:
+	 *		String address The address which was scanned.
+	 *		Number timing The duration of the connection.
+	 *		String info Additional information about the connection, state
+	 *			changes and other interesting details.
 	 */
 	Scan.createConnectionXHR = function(address, handleSingleResult){
 		try {
@@ -299,6 +313,14 @@ var NetScan = (function () {
 	}
 
 
+	/**
+	 * Performs a scan with XMLHttpRequests on an ip range and 
+	 * interprets the results which will be passed to the callback 
+	 * as soon as the scan process has finished.
+	 * @param String iprange A range of ips.
+	 * @param Function scanFinishedCB The callback which gets the results.
+	 * 		Array results Containing result objects for each address.
+	 */
 	Scan.getHostsXHR = function(iprange, scanFinishedCB){
 		// TODO use resource timing api
 		// differences in chrome: currently no entries for failed resources, see:
@@ -328,7 +350,16 @@ var NetScan = (function () {
 	};
 
 
-	/* create a single connection */
+	/**
+	 * Creates a single connection by using a WebSocket.
+	 * @param String address The address to scan.
+	 * @param Function handleSingleResult A Function which will get the 
+	 * result information through following parameters:
+	 *		String address The address which was scanned.
+	 *		Number timing The duration of the connection.
+	 *		String info Additional information about the connection, state
+	 *			changes and other interesting details.
+	 */
 	Scan.createConnectionWS = function(address, handleSingleResult){
 		var startTime = Timer.getTimestamp();
 		var wsResult = false;
@@ -377,10 +408,6 @@ var NetScan = (function () {
 			}, Scan.wsoTimeout);
 
 			// TODO: handle blocking of http authentication (in FF)
-
-			// TODO: try secure sockets (wss)
-
-
 		} 
 		catch(err) {
 			//console.log(err);
@@ -389,9 +416,17 @@ var NetScan = (function () {
 	}
 
 
+	/**
+	 * Performs a scan with WebSockets on an ip range and 
+	 * interprets the results which will be passed to the callback 
+	 * as soon as the scan process has finished.
+	 * @param String iprange A range of ips.
+	 * @param Function scanFinishedCB The callback which gets the results.
+	 * 		Array results Containing result objects for each address.
+	 */
 	Scan.getHostsWS = function(iprange, scanFinishedCB){
 		/* create a connection pool, browsers only support a certain limit of
-		 * simultaneous connections (ff ~200) */	
+		 * simultaneous connections for websockets (ff ~200) */	
 		var results = [];
 		var protocol = "ws://";
 		var ips = Util.ipRangeToArray(iprange);
@@ -431,17 +466,26 @@ var NetScan = (function () {
 	};
 
 
+	/**
+	 * Creates a single connection by using the fetch API.
+	 * @param String address The address to scan.
+	 * @param Function handleSingleResult A Function which will get the 
+	 * result information through following parameters:
+	 *		String address The address which was scanned.
+	 *		Number timing The duration of the connection.
+	 *		String info Additional information about the connection, state
+	 *			changes and other interesting details.
+	 */
 	Scan.createConnectionFetch = function(address, handleSingleResult){
 		var config = {
 			method: "GET",
 			/**	
-			 *	This will make an "opaque" request, so we will
-			 *	know when HTTP is understood by the remote host.
-			 *	CORS requests will succeed and the response gets
-			 *	"nulled".
+			 *	This will make an "opaque" request, such that CORS requests 
+			 * 	will succeed even if there is no "CORS header". The response gets
+			 *	"nulled", but we will know when HTTP is understood by the remote host.
 			 **/
 			mode: "no-cors",
-			/* Always make real requests, don't use the cache. */
+			/* Always make a "new / real" request, don't use possibly cached versions. */
 			cache: "no-store"
 		};
 		var startTime = Timer.getTimestamp();
@@ -468,6 +512,14 @@ var NetScan = (function () {
 	}
 
 
+	/**
+	 * Performs a scan with fetch API requests on an ip range and 
+	 * interprets the results which will be passed to the callback 
+	 * as soon as the scan process has finished.
+	 * @param String iprange A range of ips.
+	 * @param Function scanFinishedCB The callback which gets the results.
+	 * 		Array results Containing result objects for each address.
+	 */
 	Scan.getHostsFetch = function(iprange, scanFinishedCB){
 		var results = [];
 		var protocol = "http://";
@@ -494,6 +546,16 @@ var NetScan = (function () {
 	};
 
 
+	/**
+	 * Scans all hosts in the current local network.
+	 * The local network will be determined automatically.
+	 * @param Function scanFinishedCB Callback which will receive the results as soon as 
+	 * 		the scan is complete.
+	 * 		Array results Containing result objects for each address.
+	 * @param Function scanFunction (optional) One of the available functions
+	 * 		for scanning an iprange can be provided. The default is the function using 
+	 * 		the fetch API.
+	 */
 	Scan.getHostsLocalNetwork = function(scanFinishedCB, scanFunction = Scan.getHostsFetch){
 		Scan.getHostIps(function(ips){
 			var toTest = {};
