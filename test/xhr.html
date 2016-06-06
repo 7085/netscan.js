@@ -17,37 +17,36 @@
 		</style>
 	</head>
 	<body>
-	<script src="../src/netscan.js"></script>
-	<script>
-		function list(r) {
-			var upList = document.getElementById("up");
-			var downList = document.getElementById("down");
+		<script src="../src/netscan.js"></script>
+		<script>
+			function list(r) {
+				var upList = document.getElementById("up");
+				var downList = document.getElementById("down");
 
-			r.sort((a,b) => {return a.time - b.time});
-			
-			for(var i = 0; i < r.length; i++){
-				if(r[i].status === "up"){
-					upList.insertAdjacentHTML("beforeend", "<li>"+ r[i].ip +" <span style=\"color:#ccc\">"+ r[i].time.toFixed(2) +"</span></li>");
-				}
-				else {
-					downList.insertAdjacentHTML("beforeend", "<li>"+ r[i].ip +" <span style=\"color:#ccc\">"+ r[i].time.toFixed(2) +"</span></li>");
+				r.sort((a,b) => {return a.time - b.time});
+				
+				for(var i = 0; i < r.length; i++){
+					if(r[i].status === "up"){
+						upList.insertAdjacentHTML("beforeend", "<li>"+ r[i].ip +" <span style=\"color:#ccc\">"+ r[i].time.toFixed(2) +"</span></li>");
+					}
+					else {
+						downList.insertAdjacentHTML("beforeend", "<li>"+ r[i].ip +" <span style=\"color:#ccc\">"+ r[i].time.toFixed(2) +"</span></li>");
+					}
 				}
 			}
-		}
 
-		function tabinsert(r) {
-			var table = document.getElementById("tab");
+			function tabinsert(r) {
+				var table = document.getElementById("tab");
 			
-			for(var i = 0; i < r.length; i++){
-				tab.insertAdjacentHTML("beforeend", 
-					"<tr><td>"+ r[i].ip +"</td><td>"+ r[i].status +"</td><td>"+ r[i].time +"</td><td>"+ r[i].info +"</td></tr>");
+				for(var i = 0; i < r.length; i++){
+					tab.insertAdjacentHTML("beforeend", 
+						"<tr><td>"+ r[i].address +"</td><td>"+ r[i].status +"</td><td>"+ r[i].duration +"</td><td>"+ r[i].info +"</td></tr>");
+				}
 			}
-			
-		}
 
 
-		NetScan.Scan.getHostsLocalNetwork(tabinsert, NetScan.Scan.getHostsXHR);
-	</script>
+			NetScan.Scan.getHostsLocalNetwork(tabinsert, NetScan.Scan.getHostsXHR);
+		</script>
 <!--
 		<h1>html stub for testing</h1>
 		<ul id="up">

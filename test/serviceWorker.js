@@ -1,3 +1,8 @@
+var urlsToIntercept = [
+	"https://w0y.at/pages/about.html",
+	"https://www.w3.org/TR/resource-timing/"
+];
+
 this.addEventListener("install", function (event) {
 	console.log("installing");
 	// event.waitUntil(
@@ -24,32 +29,53 @@ this.addEventListener("activate", function (event) {
 });
 
 this.addEventListener("fetch", function (event) {
+	if(urlsToIntercept.indexOf(event.request.url) === -1){
+		return;
+	}
+	
 	console.log("Handling fetch event for", event.request.url);
 
 	event.respondWith(
 		caches.match(event.request.url)
 		.then((response) => {
-			console.log("cached response", response.clone());
-			return response.clone();
+			console.log("cached response", response);
+			return response;
 		})
 		.catch(() => {
-			fetch(event.request.url, {method: "GET", mode: "no-cors"}) //{method: "GET", mode: "no-cors", cache: "no-store"}
+			var f = fetch(event.request.url, {method: "GET", mode: "no-cors"}) //{method: "GET", mode: "no-cors", cache: "no-store"}
 			.then(function (response) {
 				console.log("fetched response", response.clone());
 				
-				/* cache it */
-				caches.open(event.request.url)
-				.then(function(cache) {
-					console.log("caching response...");
-					cache.put(event.request.url, response.clone());
+				/* forge response */
+				response.clone().blob().then(buffer => {
+					var h = new Headers();
+					h.append("Access-Control-Allow-Origin", "*");
+					h.append("x-forged", "true");
+					var r = new Response(buffer, {"status": 200, "statusText": "OK", headers: h});
+					/* overwrite read only property */
+					Object.defineProperty(r, "type", {
+						value: "basic",
+						writable: false
+					});
+					console.log("forged: ", r);
+
+					/* cache it */
+					caches.open(event.request.url)
+						.then(function (cache) {
+							console.log("caching response...");
+							cache.put(event.request.url, r);
+						});
+
+					//return response.clone();
+					//return r;
 				});
 				
-				return response.clone();
 			})
 			.catch(function (error) {
 				console.error("fetch failed", error);
-				throw error;
 			});
+			
+			return f;
 		})
 	);
 });
@@ -68,10 +94,11 @@ this.addEventListener("message", function(event){
 				event.ports[0].postMessage({error: "entry not found"});
 			}
 			else {
-				console.log("entry:", entry.clone());
+				console.log("entry:", entry);
 				
-				var resp = entry.clone();
+				var resp = entry;
 				resp.text().then(body => {
+					console.log("body", body);
 					var b = body;
 					var s = ""+ resp.status +" :: "+ resp.statusText;
 					var h = "";

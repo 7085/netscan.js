@@ -19,18 +19,17 @@
 	<body>
 	<script src="../src/netscan.js"></script>
 	<script>
-		function tabinsert(r) {
-			var table = document.getElementById("tab");
+			function tabinsert(r) {
+				var table = document.getElementById("tab");
 			
-			for(var i = 0; i < r.length; i++){
-				tab.insertAdjacentHTML("beforeend", 
-					"<tr><td>"+ r[i].ip +"</td><td>"+ r[i].status +"</td><td>"+ r[i].time +"</td><td>"+ r[i].info +"</td></tr>");
+				for(var i = 0; i < r.length; i++){
+					tab.insertAdjacentHTML("beforeend", 
+						"<tr><td>"+ r[i].address +"</td><td>"+ r[i].status +"</td><td>"+ r[i].duration +"</td><td>"+ r[i].info +"</td></tr>");
+				}
 			}
-			
-		}
 
 
-		NetScan.Scan.getPorts("127.0.0.1", "9000-9010", tabinsert);
+			NetScan.Scan.getPorts("127.0.0.1", "9000-9010", tabinsert);
 
 
 	</script>

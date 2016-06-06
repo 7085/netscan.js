@@ -1,4 +1,4 @@
-
+// eslint-disable-next-line no-unused-vars
 var NetScan = (function () {
 	"use strict";
 
@@ -6,6 +6,7 @@ var NetScan = (function () {
 	var T = {};
 
 	/* compatibility: see https://developer.mozilla.org/de/docs/Web/API/RTCPeerConnection */
+	/* eslint-disable no-unused-vars */
 	var RTCPeerConnection = window.RTCPeerConnection 
 		|| window.mozRTCPeerConnection 
 		|| window.webkitRTCPeerConnection 
@@ -22,7 +23,7 @@ var NetScan = (function () {
 		|| window.mozRTCIceCandidate 
 		|| window.webkitRTCIceCandidate 
 		|| window.msRTCIceCandidate;
-
+	/* eslint-enable no-unused-vars */
 
 	/****************************/
 
@@ -168,13 +169,21 @@ var NetScan = (function () {
 
 	/**********************************/
 
-	function ScanResult(){
-		// TODO
+	function ScanResult(address, duration, status, info){
+		this.address = address; 
+		this.duration = duration;
+		this.status = status;
+		this.info = info;
 	}
 	
 	ScanResult.prototype.toString = function(){
-		
-	}
+		return "ScanResult for '"+ this.address +"', duration: "+ this.duration +", status: "+ this.status +", info: "+ this.info;  
+	};
+	
+	ScanResult.prototype.toTableString = function(){
+		return "<tr><td>"+ this.address +"</td><td>"+ this.status +"</td><td>"+ this.duration +"</td><td>"+ this.info +"</td></tr>";
+	};
+
 
 	function Scan(){}
 
@@ -237,6 +246,7 @@ var NetScan = (function () {
 				.then(function(offerDesc){
 					conn.setLocalDescription(offerDesc);
 				},
+				// eslint-disable-next-line no-unused-vars
 				function(error){/* dont care */});
 		} 
 		catch(/* TypeError */ error){
@@ -247,6 +257,7 @@ var NetScan = (function () {
 				function(offerDesc){
 					conn.setLocalDescription(offerDesc);
 				},
+				// eslint-disable-next-line no-unused-vars
 				function(error){/* dont care */});
 		}
 	};
@@ -274,30 +285,30 @@ var NetScan = (function () {
 			
 			x.onreadystatechange = function(){
 				switch (x.readyState) {
-					case 2: // HEADERS_RECEIVED
-						diff = Timer.getTimestamp() - lastChangeTime;
-						lastChangeTime = Timer.getTimestamp();
-						info += diff + "::";
-						break;
-						
-					case 3: // LOADING
-						diff = Timer.getTimestamp() - lastChangeTime;
-						lastChangeTime = Timer.getTimestamp();
-						info += diff + "::";
-						break;
-						
-					case 4: // DONE
-						diff = Timer.getTimestamp() - lastChangeTime;
-						lastChangeTime = Timer.getTimestamp();
-						info += diff;
-						
-						var timing = lastChangeTime - startTime;
-						handleSingleResult(address, timing, info);
-						break;
-						
-					default:
-						/* we don't care about other states (OPENED, UNSENT) */
-						break;
+				case 2: // HEADERS_RECEIVED
+					diff = Timer.getTimestamp() - lastChangeTime;
+					lastChangeTime = Timer.getTimestamp();
+					info += diff + "::";
+					break;
+					
+				case 3: // LOADING
+					diff = Timer.getTimestamp() - lastChangeTime;
+					lastChangeTime = Timer.getTimestamp();
+					info += diff + "::";
+					break;
+					
+				case 4: // DONE
+					diff = Timer.getTimestamp() - lastChangeTime;
+					lastChangeTime = Timer.getTimestamp();
+					info += diff;
+					
+					var timing = lastChangeTime - startTime;
+					handleSingleResult(address, timing, info);
+					break;
+					
+				default:
+					/* we don't care about other states (OPENED, UNSENT) */
+					break;
 				}
 			};
 			
@@ -310,7 +321,7 @@ var NetScan = (function () {
 			//console.log(err);
 			handleSingleResult(address, 0, err.toString());
 		}
-	}
+	};
 
 
 	/**
@@ -331,12 +342,12 @@ var NetScan = (function () {
 
 		function handleSingleResult(address, timing, info){
 			var status = timing < Scan.timingLowerBound || timing > Scan.timingUpperBound ? "up" : "down";
-			results.push({
-				ip: address, 
-				time: timing, 
-				status: status, 
-				info: info
-			});
+			results.push(new ScanResult(
+				address, 
+				timing, 
+				status, 
+				info
+			));
 
 			/* last result received, return */
 			if(results.length === addresses.length){
@@ -382,7 +393,7 @@ var NetScan = (function () {
 		try {
 			ws = new WebSocket(address);
 
-			ws.onopen = function(evt){
+			ws.onopen = function(/* evt */){
 				onresult(address, Timer.getTimestamp() - startTime, "WS opened");
 			};
 
@@ -395,7 +406,7 @@ var NetScan = (function () {
 				}
 			};
 
-			ws.onerror = function(evt){
+			ws.onerror = function(/* evt */){
 				onresult(address, Timer.getTimestamp() - startTime, "WS error event");
 			};
 
@@ -413,7 +424,7 @@ var NetScan = (function () {
 			//console.log(err);
 			handleSingleResult(address, 0, "WS address error: "+ err.toString());
 		}
-	}
+	};
 
 
 	/**
@@ -433,12 +444,12 @@ var NetScan = (function () {
 
 		function handleSingleResult(address, timing, info){
 			var status = timing < Scan.timingLowerBound || timing > Scan.timingUpperBound ? "up" : "down";
-			results.push({
-				ip: address, 
-				time: timing, 
-				status: status, 
-				info: info
-			});
+			results.push(new ScanResult(
+				address, 
+				timing, 
+				status, 
+				info
+			));
 		}
 
 		/* initially fill pool */
@@ -509,7 +520,7 @@ var NetScan = (function () {
 			//console.log(err);
 			handleSingleResult(address, Timer.getTimestamp() - startTime, "network error: "+ err.message);
 		});
-	}
+	};
 
 
 	/**
@@ -527,12 +538,12 @@ var NetScan = (function () {
 
 		function handleSingleResult(address, timing, info){
 			var status = timing < Scan.timingLowerBound || timing > Scan.timingUpperBound ? "up" : "down";
-			results.push({
-				ip: address, 
-				time: timing, 
-				status: status, 
-				info: info
-			});
+			results.push(new ScanResult(
+				address, 
+				timing, 
+				status, 
+				info
+			));
 
 			/* last result received, return */
 			if(results.length === addresses.length){
@@ -563,7 +574,6 @@ var NetScan = (function () {
 				testedCount = 0;
 			var all = [];
 			
-
 			function resultAccumulator(res){
 				all = all.concat(res);
 				testedCount++;
@@ -573,8 +583,8 @@ var NetScan = (function () {
 			}
 
 			for(var i = 0; i < ips.length; i++){
-				if(toTest[ips[i].ip] === undefined){
-					toTest[ips[i].ip] = true;
+				if(toTest[ips[i].address] === undefined){
+					toTest[ips[i].address] = true;
 					testCount++;
 				}
 			}
@@ -635,7 +645,7 @@ var NetScan = (function () {
 			- port closed after open (net::ERR_EMPTY_RESPONSE): 5-14 ms, no significance
 			- port closed with msg: 5-14ms, slightly slower than closed ports, about ~1ms
 			- port open no resp: hangs until timeout
-			- port open w/ resp: higher thant closed ones, about ~1-2ms
+			- port open w/ resp: higher than closed ones, about ~1-2ms
 
 		*/
 		function onResultXHR(address, timing, info){
@@ -645,12 +655,12 @@ var NetScan = (function () {
 				info = "Port is blocked by browser.";
 			}
 
-			results.push({
-				ip: address, 
-				time: timing, 
-				status: status, 
-				info: info
-			});
+			results.push(new ScanResult(
+				address, 
+				timing, 
+				status, 
+				info
+			));
 
 			if(results.length === ports.length){
 				scanFinishedCB(results);
