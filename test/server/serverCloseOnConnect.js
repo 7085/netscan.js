@@ -15,5 +15,5 @@ server.on('error', (err) => {
 });
 
 server.listen(9002, () => {
-	console.log('server bound');
+	console.log('serverCloseOnConnect listening on 9002');
 });

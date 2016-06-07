@@ -17,14 +17,13 @@
 		</style>
 	</head>
 	<body>
-	<script src="../src/netscan.js"></script>
-	<script>
+		<script src="../src/netscan.js"></script>
+		<script>
 			function tabinsert(r) {
 				var table = document.getElementById("tab");
 			
 				for(var i = 0; i < r.length; i++){
-					tab.insertAdjacentHTML("beforeend", 
-						"<tr><td>"+ r[i].address +"</td><td>"+ r[i].status +"</td><td>"+ r[i].duration +"</td><td>"+ r[i].info +"</td></tr>");
+					tab.insertAdjacentHTML("beforeend", r[i].toTableString());
 				}
 			}
 
@@ -32,7 +31,7 @@
 			NetScan.Scan.getPorts("127.0.0.1", "9000-9010", tabinsert);
 
 
-	</script>
+		</script>
 
 		<h1>html stub for testing</h1>
 		<h3 id="time">processing...</h3>

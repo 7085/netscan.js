@@ -25,5 +25,5 @@ server.on('error', (err) => {
 });
 
 server.listen(9000, () => {
-	console.log('server bound');
+	console.log('serverOpenRespond listening on 9000');
 });

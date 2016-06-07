@@ -194,7 +194,7 @@ var NetScan = (function () {
 	Scan.xhrTimeout = 20000;
 	Scan.wsoTimeout = 20000;
 	Scan.fetchTimeout = 20000;
-	Scan.portScanBufferSize = 100;
+	Scan.portScanTimeout = 5000;
 	// TODO separate timing bounds for ws and xhr
 
 
@@ -272,8 +272,10 @@ var NetScan = (function () {
 	 *		Number timing The duration of the connection.
 	 *		String info Additional information about the connection, state
 	 *			changes and other interesting details.
+	 * @param Number connectionTimeout The time in milliseconds after which 
+	 * the connection will be forcefully closed.
 	 */
-	Scan.createConnectionXHR = function(address, handleSingleResult){
+	Scan.createConnectionXHR = function(address, handleSingleResult, connectionTimeout = Scan.xhrTimeout){
 		try {
 			var startTime = 0;
 			var lastChangeTime = 0;
@@ -281,7 +283,7 @@ var NetScan = (function () {
 			var info = "";
 			
 			var x = new XMLHttpRequest();
-			x.timeout = Scan.xhrTimeout;
+			x.timeout = connectionTimeout;
 			
 			x.onreadystatechange = function(){
 				switch (x.readyState) {
@@ -370,8 +372,10 @@ var NetScan = (function () {
 	 *		Number timing The duration of the connection.
 	 *		String info Additional information about the connection, state
 	 *			changes and other interesting details.
+	 * @param Number connectionTimeout The time in milliseconds after which 
+	 * the connection will be forcefully closed.
 	 */
-	Scan.createConnectionWS = function(address, handleSingleResult){
+	Scan.createConnectionWS = function(address, handleSingleResult, connectionTimeout = Scan.wsoTimeout){
 		var startTime = Timer.getTimestamp();
 		var wsResult = false;
 		var timeout,
@@ -416,7 +420,7 @@ var NetScan = (function () {
 			 * https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent#Status_codes */
 			timeout = setTimeout(function(){
 				ws.close(4999, "NetScan");
-			}, Scan.wsoTimeout);
+			}, connectionTimeout);
 
 			// TODO: handle blocking of http authentication (in FF)
 		} 
@@ -486,8 +490,10 @@ var NetScan = (function () {
 	 *		Number timing The duration of the connection.
 	 *		String info Additional information about the connection, state
 	 *			changes and other interesting details.
+	 * @param Number connectionTimeout The time in milliseconds after which 
+	 * the connection will be forcefully closed.
 	 */
-	Scan.createConnectionFetch = function(address, handleSingleResult){
+	Scan.createConnectionFetch = function(address, handleSingleResult, connectionTimeout = Scan.fetchTimeout){
 		var config = {
 			method: "GET",
 			/**	
@@ -502,7 +508,7 @@ var NetScan = (function () {
 		var startTime = Timer.getTimestamp();
 
 		var timeout = new Promise((resolve, reject) => {
-			setTimeout(() => reject(new Error("fetchTimeout triggered")), Scan.fetchTimeout);
+			setTimeout(() => reject(new Error("timeout reached")), connectionTimeout);
 		});
 
 		var requ = fetch(address, config);
@@ -514,7 +520,7 @@ var NetScan = (function () {
 			resp.text().then((body) => {
 				console.log(body);
 			});
-			handleSingleResult(address, Timer.getTimestamp() - startTime, "HTTP available");
+			handleSingleResult(address, Timer.getTimestamp() - startTime, "data received from host (HTTP might be supported)");
 		})
 		.catch(/* TypeError */ err => {
 			//console.log(err);
@@ -599,14 +605,14 @@ var NetScan = (function () {
 	};
 
 
-	Scan.getPorts = function(host, portrange, scanFinishedCB){
+	Scan.getPorts = function(host, portrange, scanFinishedCB, scanFunction = Scan.createConnectionFetch){
 		var ports = Util.portRangeToArray(portrange);
 		/* Browser port restrictions, can be found in the fetch spec:
 		 * https://fetch.spec.whatwg.org/#port-blocking 
 		 * those seem to be enforced to all kinds of connections
 		 * creating a websocket will instantly fail with an exception, 
 		 * a xhr will be blocked when the request is sent and returns very fast
-		 * The specific list can be found at:
+		 * The specific lists can be found at:
 		 * - CHROME/CHROMIUM: https://src.chromium.org/viewvc/chrome/trunk/src/net/base/net_util.cc?view=markup 
 		 * - FF: http://www-archive.mozilla.org/projects/netlib/PortBanning.html#portlist 
 		 * a few exceptions exist, depending on a specific protocol, e.g. FTP allows 21 and 22 */
@@ -624,18 +630,11 @@ var NetScan = (function () {
 		for(var i = 0; i < ports.length; i++){
 			var url = "http://"+ host +":"+ ports[i];
 			if(blocked.indexOf(ports[i]) !== -1){
-				onResultXHR(url, 0, "BLOCKED");
+				onResult(url, 0, "BLOCKED");
 			}
 			else {
-				doRequestXHR(url);
+				scanFunction(url, onResult, Scan.portScanTimeout);
 			}
-			
-		}
-
-		function doRequestXHR(url){
-			Scan.createConnectionXHR(url, function(address, timing, info){
-				onResultXHR(address, timing, info);
-			});
 		}
 
 		/*	
@@ -648,13 +647,22 @@ var NetScan = (function () {
 			- port open w/ resp: higher than closed ones, about ~1-2ms
 
 		*/
-		function onResultXHR(address, timing, info){
-			var status = "???"; // TODO
+		function onResult(address, timing, info){
+			var status = "???";
 			if(info === "BLOCKED"){
 				status = info;
-				info = "Port is blocked by browser.";
+				info = "port is blocked by browser, cannot determine status!";
 			}
-
+			
+			if(timing >= Scan.portScanTimeout){
+				status = "up";
+			}
+			
+			if(info.indexOf("data received") !== -1){
+				status = "up";
+			}
+			// TODO
+			
 			results.push(new ScanResult(
 				address, 
 				timing, 

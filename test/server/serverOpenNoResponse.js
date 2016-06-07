@@ -25,5 +25,5 @@ server.on('error', (err) => {
 });
 
 server.listen(9004, () => {
-	console.log('server bound');
+	console.log('serverOpenNoResponse listening on 9004');
 });
