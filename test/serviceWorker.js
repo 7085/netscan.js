@@ -34,12 +34,42 @@ this.addEventListener("fetch", function (event) {
 	}
 	
 	console.log("Handling fetch event for", event.request.url);
-
+	
+	/* overwrite read only property */
+	Object.defineProperty(Response.prototype, "type", {
+		value: "basic",
+		writable: false
+	});
+	Object.defineProperty(Response.prototype, "type", {
+		get: function () { return "basic"; }
+	});
+	Object.defineProperty(Response.prototype, "status", {
+		value: 203,
+		writable: false
+	});
+	Object.defineProperty(Response.prototype, "status", {
+		get: function () { return 203; }
+	});
+	Object.defineProperty(Response.prototype, "ok", {
+		value: true,
+		writable: false
+	});
+	Object.defineProperty(Response.prototype, "ok", {
+		get: function () { return true; }
+	});
+	Object.defineProperty(Response.prototype, "statusText", {
+		value: "Non-Authoritative Information",
+		writable: false
+	});
+	Object.defineProperty(Response.prototype, "statusText", {
+		get: function () { return "Non-Authoritative Information"; }
+	});
+					
 	event.respondWith(
 		caches.match(event.request.url)
 		.then((response) => {
-			console.log("cached response", response);
-			return response;
+			console.log("cached response", response.clone());
+			return response.clone();
 		})
 		.catch(() => {
 			var f = fetch(event.request.url, {method: "GET", mode: "no-cors"}) //{method: "GET", mode: "no-cors", cache: "no-store"}
@@ -52,18 +82,14 @@ this.addEventListener("fetch", function (event) {
 					h.append("Access-Control-Allow-Origin", "*");
 					h.append("x-forged", "true");
 					var r = new Response(buffer, {"status": 200, "statusText": "OK", headers: h});
-					/* overwrite read only property */
-					Object.defineProperty(r, "type", {
-						value: "basic",
-						writable: false
-					});
-					console.log("forged: ", r);
+
+					console.log("forged: ", r.clone());
 
 					/* cache it */
 					caches.open(event.request.url)
 						.then(function (cache) {
 							console.log("caching response...");
-							cache.put(event.request.url, r);
+							cache.put(event.request.url, r.clone());
 						});
 
 					//return response.clone();
@@ -98,7 +124,7 @@ this.addEventListener("message", function(event){
 				
 				var resp = entry;
 				resp.text().then(body => {
-					console.log("body", body);
+					//console.log("body", body);
 					var b = body;
 					var s = ""+ resp.status +" :: "+ resp.statusText;
 					var h = "";

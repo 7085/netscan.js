@@ -583,8 +583,8 @@ var NetScan = (function () {
 			}
 
 			for(var i = 0; i < ips.length; i++){
-				if(toTest[ips[i].address] === undefined){
-					toTest[ips[i].address] = true;
+				if(toTest[ips[i].ip] === undefined){
+					toTest[ips[i].ip] = true;
 					testCount++;
 				}
 			}
