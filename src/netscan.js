@@ -1,3 +1,8 @@
+/**
+ * // TODO description
+ * Author: Tobias Fink
+ */
+
 // eslint-disable-next-line no-unused-vars
 var NetScan = (function () {
 	"use strict";
@@ -5,7 +10,11 @@ var NetScan = (function () {
 	/* temp object for export */
 	var T = {};
 
-	/* compatibility: see https://developer.mozilla.org/de/docs/Web/API/RTCPeerConnection */
+	////////////////////////////////////////////////////////////////////////////////
+
+	/** 
+	 * compatibility: see https://developer.mozilla.org/de/docs/Web/API/RTCPeerConnection 
+	 **/
 	/* eslint-disable no-unused-vars */
 	var RTCPeerConnection = window.RTCPeerConnection 
 		|| window.mozRTCPeerConnection 
@@ -25,8 +34,11 @@ var NetScan = (function () {
 		|| window.msRTCIceCandidate;
 	/* eslint-enable no-unused-vars */
 
-	/****************************/
+	////////////////////////////////////////////////////////////////////////////////
 
+	/**
+	 * Timer contains utility functions for time measurement.
+	 */
 	function Timer(){}
 
 	Timer.start = function(name){
@@ -61,18 +73,20 @@ var NetScan = (function () {
 
 	T.Timer = Timer;
 
-	
+	////////////////////////////////////////////////////////////////////////////////
 
-	/****************************/
-	/* SDP candidate line structure (a=candidate:)
+	/**
+	 * Util contains all utility functions for parsing and converting data structures.
+	 */
+	function Util(){}
+
+	/**
+	 * SDP candidate line structure (a=candidate:)
 	 * 1 1 UDP 1686110207  80.110.26.244 50774 typ srflx raddr 192.168.2.108 rport 50774
 	 * 2 1 UDP 25108223 	237.30.30.30 58779 typ relay raddr   47.61.61.61 rport 54761
 	 * 0 			1 					UDP 				2122252543 		192.168.2.108 		52229 		typ host
 	 * candidate | rtp (1)/rtcp (2) | protocol (udp/tcp) | priority 	| ip				| port		| type (host/srflx/relay)
 	 */
-	
-	function Util(){}
-
 	Util.extractConnectionInfo = function(candidate){
 		var host = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate);
 		if(host !== null && host.length === 3){
@@ -167,8 +181,11 @@ var NetScan = (function () {
 	T.Util = Util;
 
 
-	/**********************************/
+	////////////////////////////////////////////////////////////////////////////////
 
+	/**
+	 * Data object used for scan results.
+	 */
 	function ScanResult(address, duration, status, info){
 		this.address = address; 
 		this.duration = duration;
@@ -183,12 +200,23 @@ var NetScan = (function () {
 	ScanResult.prototype.toTableString = function(){
 		return "<tr><td>"+ this.address +"</td><td>"+ this.status +"</td><td>"+ this.duration +"</td><td>"+ this.info +"</td></tr>";
 	};
-
-
+	
+	////////////////////////////////////////////////////////////////////////////////
+	
+	/**
+	 * Scan namespace.
+	 */
 	function Scan(){}
 
+	/**
+	 * Internal variables.
+	 */
 	Scan.socketPool = [];
 	Scan.poolCap = 130;
+	
+	/**
+	 * Timing default settings.
+	 */
 	Scan.timingLowerBound = 2900;
 	Scan.timingUpperBound = 10000;
 	Scan.xhrTimeout = 20000;
@@ -197,6 +225,14 @@ var NetScan = (function () {
 	Scan.portScanTimeout = 5000;
 	// TODO separate timing bounds for ws and xhr
 
+	/**
+	 * Result messages used internally.
+	 */
+	Scan.resultMsgTimeout = "NETWORK TIMEOUT";
+	Scan.resultMsgError = "NETWORK ERROR";
+	Scan.resultMsgData = "DATA RECEIVED";
+	Scan.resultMsgConnected = "CONNECTION ESTABLISHED";
+	Scan.resultMsgDisconnected = "CONNECTION CLOSED";
 
 	/**
 	 * Retrieves all private and public ip address
@@ -228,8 +264,10 @@ var NetScan = (function () {
 					ips.push(host);
 				}
 			}
-			/* at this state (evt.candidate == null) we are finished, see:
-			 * https://developer.mozilla.org/de/docs/Web/API/RTCPeerConnection/onicecandidate */
+			/** 
+			 * At this state (evt.candidate == null) we are finished, see:
+			 * https://developer.mozilla.org/de/docs/Web/API/RTCPeerConnection/onicecandidate 
+			 **/
 			else { 
 				Timer.stop("getHostIps");
 				sendChan.close();
@@ -251,8 +289,10 @@ var NetScan = (function () {
 		} 
 		catch(/* TypeError */ error){
 
-			/* Fallback for older version of createOffer which requires 
-			 * two callbacks instead of the newer Promise which will be returned */
+			/**
+			 * Fallback for older version of createOffer which requires 
+			 * two callbacks instead of the newer Promise which will be returned 
+			 **/
 			conn.createOffer(
 				function(offerDesc){
 					conn.setLocalDescription(offerDesc);
@@ -321,7 +361,7 @@ var NetScan = (function () {
 		} 
 		catch (err){
 			//console.log(err);
-			handleSingleResult(address, 0, err.toString());
+			handleSingleResult(address, 0, Scan.resultMsgError + " ("+ err.toString() +")");
 		}
 	};
 
@@ -398,20 +438,20 @@ var NetScan = (function () {
 			ws = new WebSocket(address);
 
 			ws.onopen = function(/* evt */){
-				onresult(address, Timer.getTimestamp() - startTime, "WS opened");
+				onresult(address, Timer.getTimestamp() - startTime, Scan.resultMsgConnected);
 			};
 
 			ws.onclose = function(/*CloseEvent*/ evt){
-				if(evt.code === 4999 && evt.reason === "NetScan"){
-					onresult(address, Timer.getTimestamp() - startTime, "WS closed by timeout");
+				if(evt.code === 4999 && evt.reason === Scan.resultMsgTimeout){
+					onresult(address, Timer.getTimestamp() - startTime, Scan.resultMsgTimeout);
 				}
 				else {
-					onresult(address, Timer.getTimestamp() - startTime, "WS closed");
+					onresult(address, Timer.getTimestamp() - startTime, Scan.resultMsgDisconnected);
 				}
 			};
 
 			ws.onerror = function(/* evt */){
-				onresult(address, Timer.getTimestamp() - startTime, "WS error event");
+				onresult(address, Timer.getTimestamp() - startTime, Scan.resultMsgError);
 			};
 
 			Scan.socketPool.push(ws);
@@ -419,14 +459,13 @@ var NetScan = (function () {
 			/* trigger a manual close after some time, identified by "code" and "reason"
 			 * https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent#Status_codes */
 			timeout = setTimeout(function(){
-				ws.close(4999, "NetScan");
+				ws.close(4999, Scan.resultMsgTimeout);
 			}, connectionTimeout);
 
 			// TODO: handle blocking of http authentication (in FF)
 		} 
 		catch(err) {
-			//console.log(err);
-			handleSingleResult(address, 0, "WS address error: "+ err.toString());
+			handleSingleResult(address, 0, Scan.resultMsgError + " ("+ err.toString() +")");
 		}
 	};
 
@@ -508,7 +547,7 @@ var NetScan = (function () {
 		var startTime = Timer.getTimestamp();
 
 		var timeout = new Promise((resolve, reject) => {
-			setTimeout(() => reject(new Error("timeout reached")), connectionTimeout);
+			setTimeout(() => reject(new Error(Scan.resultMsgTimeout)), connectionTimeout);
 		});
 
 		var requ = fetch(address, config);
@@ -520,11 +559,15 @@ var NetScan = (function () {
 			resp.text().then((body) => {
 				console.log(body);
 			});
-			handleSingleResult(address, Timer.getTimestamp() - startTime, "data received from host (HTTP might be supported)");
+			handleSingleResult(address, Timer.getTimestamp() - startTime, Scan.resultMsgData);
 		})
 		.catch(/* TypeError */ err => {
-			//console.log(err);
-			handleSingleResult(address, Timer.getTimestamp() - startTime, "network error: "+ err.message);
+			if(err.message === Scan.resultMsgTimeout){
+				handleSingleResult(address, Timer.getTimestamp() - startTime, Scan.resultMsgTimeout);
+			}
+			else {
+				handleSingleResult(address, Timer.getTimestamp() - startTime, Scan.resultMsgError + " ("+ err.toString() +")");	
+			}
 		});
 	};
 
@@ -649,17 +692,19 @@ var NetScan = (function () {
 		*/
 		function onResult(address, timing, info){
 			var status = "???";
+			
+			/* cannot scan */
 			if(info === "BLOCKED"){
-				status = info;
 				info = "port is blocked by browser, cannot determine status!";
 			}
-			
-			if(timing >= Scan.portScanTimeout){
-				status = "up";
+			/* timing */
+			else if(timing >= Scan.portScanTimeout){
+				status = "open";
 			}
-			
-			if(info.indexOf("data received") !== -1){
-				status = "up";
+			/* response */
+			else if((info.indexOf(Scan.resultMsgData) !== -1)
+			|| (info.indexOf(Scan.resultMsgConnected !== -1))){
+				status = "open";
 			}
 			// TODO
 			
@@ -679,10 +724,7 @@ var NetScan = (function () {
 
 	T.Scan = Scan;
 
-	/**********************************/
-
-	
-
+	////////////////////////////////////////////////////////////////////////////////
 
 	return T;
 }());
