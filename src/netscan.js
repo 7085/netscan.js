@@ -746,13 +746,33 @@ var NetScan = (function () {
 		}
 
 		/**
-		 * Timings gathered (active host):
-		 * # chromium
-		 * - port not open (net::ERR_CONNECTION_REFUSED): 5-31 ms
-		 * - port closed after open (net::ERR_EMPTY_RESPONSE): 5-14 ms, no significance
-		 * - port closed with msg: 5-14ms, slightly slower than closed ports, about ~1ms
-		 * - port open no resp: hangs until timeout
-		 * - port open w/ resp: higher than closed ones, about ~1-2ms
+		 * Observations (when host is up):
+		 * -------------------------------
+		 * legend:
+		 * [+] = can be detected
+		 * [-] = cannot be distinguished, only if it is the only other case
+		 * [?] = needs further investigation
+		 * 
+		 * # chromium (Version 51.0.2704.79 Built on 8.4, running on Debian 8.5 (64-bit)):
+		 * [-] port no connection: 		returns fast (net::ERR_CONNECTION_REFUSED in console)
+		 * [?] port closed no resp: 	returns fast (net::ERR_EMPTY_RESPONSE in console)
+		 * [+] port closed w/ resp: 	returns fast, can be detected with fetch (+no-cors request),
+		 * 								also performance timing entry
+		 * [+] port opened no resp: 	hangs until timeout
+		 * [+] port opened w/ resp: 	hangs until timeout, performance timing entry after builtin 
+		 * 								timeout >40000
+		 * 
+		 * # ff (Iceweasel 38.8.0 Debian 8.5 (64-bit)):
+		 * [-] port no connection: 		returns fast
+		 * [+] port closed no resp: 	returns fast, performance entry
+		 * [+] port closed w/ resp: 	returns fast, [DEPRECATED:-although-data-is-sent,-no-further-indicators-],
+		 * 								performance timing entry
+		 * 								(might be determined with newer fetch, needs to be checked with 
+		 * 								newer version, >= 39, currently testing with 38.8) 
+		 * [+] port opened no resp:		hangs until timeout, perf entry after builtin timeout (?) which is 
+		 * 								very large: > 80000
+		 * [+] port opened w/ resp: 	returns fast, BUT because we received some data we get a performance
+		 * 								timing entry with duration != 0 -> win :)
 		 **/
 		function onResult(address, timing, info){
 			var status = "???";
