@@ -1,7 +1,7 @@
 /**
  * // TODO description
  * Author: Tobias Fink
- */
+ **/
 
 // eslint-disable-next-line no-unused-vars
 var NetScan = (function () {
@@ -38,7 +38,7 @@ var NetScan = (function () {
 
 	/**
 	 * Timer contains utility functions for time measurement.
-	 */
+	 **/
 	function Timer(){}
 
 	Timer.start = function(name){
@@ -77,7 +77,7 @@ var NetScan = (function () {
 
 	/**
 	 * Util contains all utility functions for parsing and converting data structures.
-	 */
+	 **/
 	function Util(){}
 
 	/**
@@ -86,7 +86,7 @@ var NetScan = (function () {
 	 * 2 1 UDP 25108223 	237.30.30.30 58779 typ relay raddr   47.61.61.61 rport 54761
 	 * 0 			1 					UDP 				2122252543 		192.168.2.108 		52229 		typ host
 	 * candidate | rtp (1)/rtcp (2) | protocol (udp/tcp) | priority 	| ip				| port		| type (host/srflx/relay)
-	 */
+	 **/
 	Util.extractConnectionInfo = function(candidate){
 		var host = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate);
 		if(host !== null && host.length === 3){
@@ -165,7 +165,7 @@ var NetScan = (function () {
 
 		return ports;
 	};
-
+	
 	Util.isPrivateIp = function(ip){
 		if(typeof ip === "string"){
 			ip = Util.ipToArray(ip);
@@ -185,7 +185,7 @@ var NetScan = (function () {
 
 	/**
 	 * Data object used for scan results.
-	 */
+	 **/
 	function ScanResult(address, duration, status, info){
 		this.address = address; 
 		this.duration = duration;
@@ -205,33 +205,34 @@ var NetScan = (function () {
 	
 	/**
 	 * Scan namespace.
-	 */
+	 **/
 	function Scan(){}
 
 	/**
 	 * Internal variables.
-	 */
+	 **/
 	Scan.socketPool = [];
 	Scan.poolCap = 130;
 	
 	/**
 	 * Timing default settings.
-	 */
+	 **/
 	Scan.timingLowerBound = 2900;
 	Scan.timingUpperBound = 10000;
 	Scan.xhrTimeout = 20000;
 	Scan.wsoTimeout = 20000;
 	Scan.fetchTimeout = 20000;
+	Scan.htmlTimeout = 20000;
 	Scan.portScanTimeout = 5000;
 	// TODO separate timing bounds for ws and xhr
 
 	/**
 	 * Result messages used internally.
-	 */
+	 **/
 	Scan.resultMsgTimeout = "NETWORK TIMEOUT";
 	Scan.resultMsgError = "NETWORK ERROR";
 	Scan.resultMsgData = "DATA RECEIVED";
-	Scan.resultMsgConnected = "CONNECTION ESTABLISHED";
+	Scan.resultMsgConnected = "CONNECTION OPENED";
 	Scan.resultMsgDisconnected = "CONNECTION CLOSED";
 
 	/**
@@ -240,7 +241,7 @@ var NetScan = (function () {
 	 * @param Function cbReturn
 	 * 	Gets a list of ip and port combinations which were
 	 * 	found in the gathering process.
-	 */
+	 **/
 	Scan.getHostIps = function(cbReturn){
 		Timer.start("getHostIps");
 		var ips = [];
@@ -314,7 +315,7 @@ var NetScan = (function () {
 	 *			changes and other interesting details.
 	 * @param Number connectionTimeout The time in milliseconds after which 
 	 * the connection will be forcefully closed.
-	 */
+	 **/
 	Scan.createConnectionXHR = function(address, handleSingleResult, connectionTimeout = Scan.xhrTimeout){
 		try {
 			var startTime = 0;
@@ -373,7 +374,7 @@ var NetScan = (function () {
 	 * @param String iprange A range of ips.
 	 * @param Function scanFinishedCB The callback which gets the results.
 	 * 		Array results Containing result objects for each address.
-	 */
+	 **/
 	Scan.getHostsXHR = function(iprange, scanFinishedCB){
 		// TODO use resource timing api
 		// differences in chrome: currently no entries for failed resources, see:
@@ -414,7 +415,7 @@ var NetScan = (function () {
 	 *			changes and other interesting details.
 	 * @param Number connectionTimeout The time in milliseconds after which 
 	 * the connection will be forcefully closed.
-	 */
+	 **/
 	Scan.createConnectionWS = function(address, handleSingleResult, connectionTimeout = Scan.wsoTimeout){
 		var startTime = Timer.getTimestamp();
 		var wsResult = false;
@@ -477,7 +478,7 @@ var NetScan = (function () {
 	 * @param String iprange A range of ips.
 	 * @param Function scanFinishedCB The callback which gets the results.
 	 * 		Array results Containing result objects for each address.
-	 */
+	 **/
 	Scan.getHostsWS = function(iprange, scanFinishedCB){
 		/* create a connection pool, browsers only support a certain limit of
 		 * simultaneous connections for websockets (ff ~200) */	
@@ -531,7 +532,7 @@ var NetScan = (function () {
 	 *			changes and other interesting details.
 	 * @param Number connectionTimeout The time in milliseconds after which 
 	 * the connection will be forcefully closed.
-	 */
+	 **/
 	Scan.createConnectionFetch = function(address, handleSingleResult, connectionTimeout = Scan.fetchTimeout){
 		var config = {
 			method: "GET",
@@ -554,11 +555,11 @@ var NetScan = (function () {
 
 		var p = Promise.race([timeout, requ]);
 		p.then((resp) => {
-			console.log(resp.headers);
-			console.log(resp.type, resp.ok, resp.status, resp.statusText);
-			resp.text().then((body) => {
-				console.log(body);
-			});
+			// console.log(resp.headers);
+			// console.log(resp.type, resp.ok, resp.status, resp.statusText);
+			// resp.text().then((body) => {
+			// 	console.log(body);
+			// });
 			handleSingleResult(address, Timer.getTimestamp() - startTime, Scan.resultMsgData);
 		})
 		.catch(/* TypeError */ err => {
@@ -579,7 +580,7 @@ var NetScan = (function () {
 	 * @param String iprange A range of ips.
 	 * @param Function scanFinishedCB The callback which gets the results.
 	 * 		Array results Containing result objects for each address.
-	 */
+	 **/
 	Scan.getHostsFetch = function(iprange, scanFinishedCB){
 		var results = [];
 		var protocol = "http://";
@@ -607,6 +608,43 @@ var NetScan = (function () {
 
 
 	/**
+	 * Creates a single connection by using a HTML element.
+	 * @param String address The address to scan.
+	 * @param Function handleSingleResult A Function which will get the 
+	 * result information through following parameters:
+	 *		String address The address which was scanned.
+	 *		Number timing The duration of the connection.
+	 *		String info Additional information about the connection, state
+	 *			changes and other interesting details.
+	 * @param Number connectionTimeout The time in milliseconds after which 
+	 * the connection will be forcefully closed.
+	 **/
+	Scan.createConnectionHTML = function(address, handleSingleResult, connectionTimeout = Scan.htmlTimeout){
+		var request = new Image();
+		var timeout,
+			startTime;
+		
+		request.onerror = function(/* evt */){
+			clearTimeout(timeout);
+			handleSingleResult(address, Timer.getTimestamp() - startTime, Scan.resultMsgError);
+		};
+		
+		request.onload = function(/* evt */){
+			clearTimeout(timeout);
+			handleSingleResult(address, Timer.getTimestamp() - startTime, Scan.resultMsgData);
+		};
+		
+		timeout = setTimeout(function(){
+			handleSingleResult(address, Timer.getTimestamp() - startTime, Scan.resultMsgTimeout);
+		}, connectionTimeout);
+		
+		startTime = Timer.getTimestamp();
+		/* start the request */
+		request.src = address;
+	};
+
+
+	/**
 	 * Scans all hosts in the current local network.
 	 * The local network will be determined automatically.
 	 * @param Function scanFinishedCB Callback which will receive the results as soon as 
@@ -615,7 +653,7 @@ var NetScan = (function () {
 	 * @param Function scanFunction (optional) One of the available functions
 	 * 		for scanning an iprange can be provided. The default is the function using 
 	 * 		the fetch API.
-	 */
+	 **/
 	Scan.getHostsLocalNetwork = function(scanFinishedCB, scanFunction = Scan.getHostsFetch){
 		Scan.getHostIps(function(ips){
 			var toTest = {};
@@ -650,15 +688,22 @@ var NetScan = (function () {
 
 	Scan.getPorts = function(host, portrange, scanFinishedCB, scanFunction = Scan.createConnectionFetch){
 		var ports = Util.portRangeToArray(portrange);
-		/* Browser port restrictions, can be found in the fetch spec:
+		/** 
+		 * Browser port restrictions, can be found in the fetch spec:
 		 * https://fetch.spec.whatwg.org/#port-blocking 
 		 * those seem to be enforced to all kinds of connections
 		 * creating a websocket will instantly fail with an exception, 
 		 * a xhr will be blocked when the request is sent and returns very fast
 		 * The specific lists can be found at:
-		 * - CHROME/CHROMIUM: https://src.chromium.org/viewvc/chrome/trunk/src/net/base/net_util.cc?view=markup 
-		 * - FF: http://www-archive.mozilla.org/projects/netlib/PortBanning.html#portlist 
-		 * a few exceptions exist, depending on a specific protocol, e.g. FTP allows 21 and 22 */
+		 * - CHROME/CHROMIUM: 
+		 * 		https://cs.chromium.org/chromium/src/net/base/port_util.cc?q=kRestrictedPorts&sq=package:chromium&dr=CSs&l=22
+		 * - FF: 
+		 * 		https://developer.mozilla.org/en-US/docs/Mozilla/Mozilla_Port_Blocking
+		 * A few exceptions exist, depending on a specific protocol, e.g. FTP allows 21 and 22,
+		 * chrome only supports ftp.
+		 * FF has some more protocols, but also only ftp allows further ports (21, 22) see:
+		 * 		https://dxr.mozilla.org/mozilla-central/search?q=%2Boverrides%3A%22nsIProtocolHandler%3A%3AAllowPort%28int32_t%2C+const+char+*%2C+bool+*%29%22
+		 **/
 		var blocked = [
 			1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 
 			42, 43, 53, 77, 79, 87, 95, 101, 102, 103, 104, 109, 
@@ -673,23 +718,30 @@ var NetScan = (function () {
 		for(var i = 0; i < ports.length; i++){
 			var url = "http://"+ host +":"+ ports[i];
 			if(blocked.indexOf(ports[i]) !== -1){
-				onResult(url, 0, "BLOCKED");
+				/* exception which can be resolved by ftp */
+				if(ports[i] === 21 || ports[i] === 22){
+					url = "ftp://"+ host +":"+ ports[i];
+					/* note: only html scan can connect to ftp addresses */
+					Scan.createConnectionHTML(url, onResult, Scan.portScanTimeout);
+				}
+				else {
+					onResult(url, 0, "BLOCKED");	
+				}
 			}
 			else {
 				scanFunction(url, onResult, Scan.portScanTimeout);
 			}
 		}
 
-		/*	
-			Timings gathered (active host):
-			# chromium
-			- port not open (net::ERR_CONNECTION_REFUSED): 5-31 ms
-			- port closed after open (net::ERR_EMPTY_RESPONSE): 5-14 ms, no significance
-			- port closed with msg: 5-14ms, slightly slower than closed ports, about ~1ms
-			- port open no resp: hangs until timeout
-			- port open w/ resp: higher than closed ones, about ~1-2ms
-
-		*/
+		/**
+		 * Timings gathered (active host):
+		 * # chromium
+		 * - port not open (net::ERR_CONNECTION_REFUSED): 5-31 ms
+		 * - port closed after open (net::ERR_EMPTY_RESPONSE): 5-14 ms, no significance
+		 * - port closed with msg: 5-14ms, slightly slower than closed ports, about ~1ms
+		 * - port open no resp: hangs until timeout
+		 * - port open w/ resp: higher than closed ones, about ~1-2ms
+		 **/
 		function onResult(address, timing, info){
 			var status = "???";
 			
