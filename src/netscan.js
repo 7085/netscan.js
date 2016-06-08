@@ -767,7 +767,7 @@ var NetScan = (function () {
 			}
 			/* response */
 			else if((info.indexOf(Scan.resultMsgData) !== -1)
-			|| (info.indexOf(Scan.resultMsgConnected !== -1))){
+			|| (info.indexOf(Scan.resultMsgConnected) !== -1)){
 				status = "open";
 			}
 			// TODO
