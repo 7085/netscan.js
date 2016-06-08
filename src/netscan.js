@@ -150,20 +150,32 @@ var NetScan = (function () {
 	};
 
 	Util.portRangeToArray = function(portrange){
-		var range = [];
 		if(portrange.indexOf("-") !== -1){
-			range = portrange.split("-").map(Number);
+			var range = portrange.split("-").map(Number);
+			
+			var ports = [];
+			for (var i = range[0]; i <= range[1]; i++) {
+				ports.push(i);
+			}
+
+			return ports;
 		}
 		else {
-			range = [Number(portrange), Number(portrange)];
+			return [Number(portrange)];
 		}
-
-		var ports = [];
-		for(var i = range[0]; i <= range[1]; i++){
-			ports.push(i);
+	};
+	
+	Util.portStringToArray = function(portstring){
+		if(portstring.indexOf(",") !== -1){
+			var ports = [];
+			portstring.split(",").map((val) => {
+				ports = ports.concat(Util.portRangeToArray(val));
+			});
+			return ports;
 		}
-
-		return ports;
+		else {
+			return Util.portRangeToArray(portstring);
+		}
 	};
 	
 	Util.isPrivateIp = function(ip){
@@ -687,7 +699,7 @@ var NetScan = (function () {
 
 
 	Scan.getPorts = function(host, portrange, scanFinishedCB, scanFunction = Scan.createConnectionFetch){
-		var ports = Util.portRangeToArray(portrange);
+		var ports = Util.portStringToArray(portrange);
 		/** 
 		 * Browser port restrictions, can be found in the fetch spec:
 		 * https://fetch.spec.whatwg.org/#port-blocking 
