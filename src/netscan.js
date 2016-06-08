@@ -715,6 +715,8 @@ var NetScan = (function () {
 		 * chrome only supports ftp.
 		 * FF has some more protocols, but also only ftp allows further ports (21, 22) see:
 		 * 		https://dxr.mozilla.org/mozilla-central/search?q=%2Boverrides%3A%22nsIProtocolHandler%3A%3AAllowPort%28int32_t%2C+const+char+*%2C+bool+*%29%22
+		 * Still there is the possibility that the ftp protocol will be removed (at least from chrome/ium),
+		 * see: https://bugs.chromium.org/p/chromium/issues/detail?id=333943
 		 **/
 		var blocked = [
 			1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 
@@ -750,19 +752,22 @@ var NetScan = (function () {
 		 * -------------------------------
 		 * legend:
 		 * [+] = can be detected
-		 * [-] = cannot be distinguished, only if it is the only other case
+		 * [-] = cannot be distinguished 
 		 * [?] = needs further investigation
 		 * 
-		 * # chromium (Version 51.0.2704.79 Built on 8.4, running on Debian 8.5 (64-bit)):
+		 * # Chromium (Version 51.0.2704.79 Built on 8.4, running on Debian 8.5 (64-bit)):
 		 * [-] port no connection: 		returns fast (net::ERR_CONNECTION_REFUSED in console)
-		 * [?] port closed no resp: 	returns fast (net::ERR_EMPTY_RESPONSE in console)
+		 * [?] port closed no resp: 	returns fast (net::ERR_EMPTY_RESPONSE in console),
+		 * 								cannot be distinguished currently, maybe when chrome/ium 
+		 * 								extends the performance timing api, like it is already handled 
+		 * 								in FF, see https://bugs.chromium.org/p/chromium/issues/detail?id=460879#c11
 		 * [+] port closed w/ resp: 	returns fast, can be detected with fetch (+no-cors request),
 		 * 								also performance timing entry
 		 * [+] port opened no resp: 	hangs until timeout
 		 * [+] port opened w/ resp: 	hangs until timeout, performance timing entry after builtin 
 		 * 								timeout >40000
 		 * 
-		 * # ff (Iceweasel 38.8.0 Debian 8.5 (64-bit)):
+		 * # FF (Iceweasel 38.8.0 Debian 8.5 (64-bit)):
 		 * [-] port no connection: 		returns fast
 		 * [+] port closed no resp: 	returns fast, performance entry
 		 * [+] port closed w/ resp: 	returns fast, [DEPRECATED:-although-data-is-sent,-no-further-indicators-],
