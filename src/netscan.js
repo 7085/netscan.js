@@ -766,18 +766,22 @@ var NetScan = (function () {
 		 * [+] port opened no resp: 	hangs until timeout
 		 * [+] port opened w/ resp: 	hangs until timeout, performance timing entry after builtin 
 		 * 								timeout >40000
+		 * [?] port instaclose no msg:	returns fast (net::ERR_SOCKET_NOT_CONNECTED)
+		 * [+] port instaclose w/ msg:	returns fast, can be detected with fetch (+no-cors request)
+		 * 								and with performance timing entry
 		 * 
 		 * # FF (Iceweasel 38.8.0 Debian 8.5 (64-bit)):
 		 * [-] port no connection: 		returns fast
-		 * [+] port closed no resp: 	returns fast, performance entry
-		 * [+] port closed w/ resp: 	returns fast, [DEPRECATED:-although-data-is-sent,-no-further-indicators-],
-		 * 								performance timing entry
-		 * 								(might be determined with newer fetch, needs to be checked with 
+		 * [+] port closed no resp: 	returns fast, performance timing entry with duration != 0 
+		 * [+] port closed w/ resp: 	returns fast, performance timing entry with duration != 0 
+		 * 								(might be also determined with newer fetch, needs to be checked with 
 		 * 								newer version, >= 39, currently testing with 38.8) 
 		 * [+] port opened no resp:		hangs until timeout, perf entry after builtin timeout (?) which is 
 		 * 								very large: > 80000
 		 * [+] port opened w/ resp: 	returns fast, BUT because we received some data we get a performance
-		 * 								timing entry with duration != 0 -> win :)
+		 * 								timing entry with duration != 0 
+		 * [+] port instaclose no msg:	returns very fast, perf timing entry with duration != 0 
+		 * [+] port instaclose w/ msg:	returns very fast, perf timing entry with duration != 0 
 		 **/
 		function onResult(address, timing, info){
 			var status = "???";
