@@ -190,6 +190,27 @@ var NetScan = (function () {
 		}
 	};
 	
+	Util.updateResultsWithPerfTimingData = function(results, statusNew){
+		if(results.length < 1 || !(results[0] instanceof ScanResult)){
+			return;
+		}
+		
+		var connections = performance.getEntriesByType("resource").filter((entry) => {
+			return entry.duration !== 0;
+		});
+		
+		for(var i = 0; i < connections.length; i++){
+			for(var j = 0; j < results.length; j++){
+				if(connections[i].name.indexOf(results[j].address) !== -1){
+					results[j].status = statusNew;
+					results[j].info += "; "+ Scan.resultMsgPerfTiming;
+					break;
+				}
+			}
+		}
+	};
+	
+	
 	T.Util = Util;
 
 
@@ -699,27 +720,21 @@ var NetScan = (function () {
 	};
 
 
-	Scan.updateResultsWithPerfTimingData = function(results, statusNew){
-		if(results.length < 1 || !(results[0] instanceof ScanResult)){
-			return;
-		}
-		
-		var connections = performance.getEntriesByType("resource").filter((entry) => {
-			return entry.duration !== 0;
-		});
-		
-		for(var i = 0; i < connections.length; i++){
-			for(var j = 0; j < results.length; j++){
-				if(connections[i].name.indexOf(results[j].address) !== -1){
-					results[j].status = statusNew;
-					results[j].info += "; "+ Scan.resultMsgPerfTiming;
-					break;
-				}
-			}
-		}
-	};
-
-
+	/**
+	 * Scans the specified ports of a host and tries to 
+	 * determine their status (whether they are open or closed).
+	 * 
+	 * @param String host The host to scan.
+	 * @param String portrange A string containing a range/list of ports.
+	 * The string can contain a single port, a comma separated list of ports 
+	 * or a range (two ports separated by a '-' character), or a mixture of 
+	 * them.
+	 * @param Function scanFinishedCB Callback which will receive the results as soon as 
+	 * the scan is complete. An array containing result objects for each port will be passed
+	 * as argument to the callback.
+	 * @param Function scanFunction One of the 'Scan.createConnection*'-functions which will be
+	 * used to perform the scan on each individual port. The default is Scan.createConnectionFetch.
+	 **/
 	Scan.getPorts = function(host, portrange, scanFinishedCB, scanFunction = Scan.createConnectionFetch){
 		var ports = Util.portStringToArray(portrange);
 		/** 
@@ -832,7 +847,7 @@ var NetScan = (function () {
 
 			if(results.length === ports.length){
 				/* check if we can add some additional info of other APIs */
-				Scan.updateResultsWithPerfTimingData(results, "open");
+				Util.updateResultsWithPerfTimingData(results, "open");
 				
 				scanFinishedCB(results);
 			}
