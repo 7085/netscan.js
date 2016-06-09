@@ -246,6 +246,7 @@ var NetScan = (function () {
 	Scan.resultMsgData = "DATA RECEIVED";
 	Scan.resultMsgConnected = "CONNECTION OPENED";
 	Scan.resultMsgDisconnected = "CONNECTION CLOSED";
+	Scan.resultMsgPerfTiming = "PERF-TIMING CONNECTION RECORD";
 
 	/**
 	 * Retrieves all private and public ip address
@@ -698,6 +699,27 @@ var NetScan = (function () {
 	};
 
 
+	Scan.updateResultsWithPerfTimingData = function(results, statusNew){
+		if(results.length < 1 || !(results[0] instanceof ScanResult)){
+			return;
+		}
+		
+		var connections = performance.getEntriesByType("resource").filter((entry) => {
+			return entry.duration !== 0;
+		});
+		
+		for(var i = 0; i < connections.length; i++){
+			for(var j = 0; j < results.length; j++){
+				if(connections[i].name.indexOf(results[j].address) !== -1){
+					results[j].status = statusNew;
+					results[j].info += "; "+ Scan.resultMsgPerfTiming;
+					break;
+				}
+			}
+		}
+	};
+
+
 	Scan.getPorts = function(host, portrange, scanFinishedCB, scanFunction = Scan.createConnectionFetch){
 		var ports = Util.portStringToArray(portrange);
 		/** 
@@ -786,6 +808,7 @@ var NetScan = (function () {
 		function onResult(address, timing, info){
 			var status = "???";
 			
+			/* Update result with status and info we can directly derive */
 			/* cannot scan */
 			if(info === "BLOCKED"){
 				info = "port is blocked by browser, cannot determine status!";
@@ -799,7 +822,6 @@ var NetScan = (function () {
 			|| (info.indexOf(Scan.resultMsgConnected) !== -1)){
 				status = "open";
 			}
-			// TODO
 			
 			results.push(new ScanResult(
 				address, 
@@ -809,6 +831,9 @@ var NetScan = (function () {
 			));
 
 			if(results.length === ports.length){
+				/* check if we can add some additional info of other APIs */
+				Scan.updateResultsWithPerfTimingData(results, "open");
+				
 				scanFinishedCB(results);
 			}
 		}
