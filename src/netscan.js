@@ -191,6 +191,10 @@ var NetScan = (function () {
 	};
 	
 	Util.updateResultsWithPerfTimingData = function(results, statusNew){
+		/**
+		 * differences in chrome: currently no entries for failed resources, see:
+		 * https://bugs.chromium.org/p/chromium/issues/detail?id=460879
+		 */
 		if(results.length < 1 || !(results[0] instanceof ScanResult)){
 			return;
 		}
@@ -201,6 +205,8 @@ var NetScan = (function () {
 		
 		for(var i = 0; i < connections.length; i++){
 			for(var j = 0; j < results.length; j++){
+				// TODO websocket (ws) connections are also named with http://
+				// TODO some addresses get multiple entries
 				if(connections[i].name.indexOf(results[j].address) !== -1){
 					results[j].status = statusNew;
 					results[j].info += "; "+ Scan.resultMsgPerfTiming;
@@ -208,6 +214,10 @@ var NetScan = (function () {
 				}
 			}
 		}
+	};
+	
+	Util.clearPerfTimingData = function(){
+		performance.clearResourceTimings();
 	};
 	
 	
@@ -410,9 +420,6 @@ var NetScan = (function () {
 	 * 		Array results Containing result objects for each address.
 	 **/
 	Scan.getHostsXHR = function(iprange, scanFinishedCB){
-		// TODO use resource timing api
-		// differences in chrome: currently no entries for failed resources, see:
-		// https://bugs.chromium.org/p/chromium/issues/detail?id=460879
 		var results = [];
 		var protocol = "http://";
 		var addresses = Util.ipRangeToArray(iprange);
@@ -428,9 +435,15 @@ var NetScan = (function () {
 
 			/* last result received, return */
 			if(results.length === addresses.length){
+				/* check if we can add some additional info of perf timing API */
+				Util.updateResultsWithPerfTimingData(results, "up");
+				
 				scanFinishedCB(results);
 			}
 		}
+		
+		/* clear all perftiming entries for reliable results */
+		Util.clearPerfTimingData();
 		
 		for(var i = 0; i < addresses.length; i++){
 			Scan.createConnectionXHR(protocol + addresses[i], handleSingleResult);
@@ -530,6 +543,9 @@ var NetScan = (function () {
 			));
 		}
 
+		/* clear all perftiming entries for reliable results */
+		Util.clearPerfTimingData();
+
 		/* initially fill pool */
 		for(var i = 0; i < Scan.poolCap && ips.length > 0; i++){
 			Scan.createConnectionWS(protocol + ips.shift(), handleSingleResult);			
@@ -541,7 +557,8 @@ var NetScan = (function () {
 				/* finished */
 				clearInterval(poolMonitor);
 
-				// TODO add/merge/compare results of perf resource timing api
+				/* check if we can add some additional info of perf timing API */
+				Util.updateResultsWithPerfTimingData(results, "up");
 				
 				scanFinishedCB(results);
 			}
@@ -631,9 +648,15 @@ var NetScan = (function () {
 
 			/* last result received, return */
 			if(results.length === addresses.length){
+				/* check if we can add some additional info of perf timing API */
+				Util.updateResultsWithPerfTimingData(results, "up");
+				
 				scanFinishedCB(results);
 			}
 		}
+		
+		/* clear all perftiming entries for reliable results */
+		Util.clearPerfTimingData();
 		
 		for(var i = 0; i < addresses.length; i++){
 			Scan.createConnectionFetch(protocol + addresses[i], handleSingleResult);
@@ -765,6 +788,9 @@ var NetScan = (function () {
 		];
 
 		var results = [];
+		
+		/* clear all perftiming entries for reliable results */
+		Util.clearPerfTimingData();
 
 		for(var i = 0; i < ports.length; i++){
 			var url = "http://"+ host +":"+ ports[i];
@@ -846,7 +872,7 @@ var NetScan = (function () {
 			));
 
 			if(results.length === ports.length){
-				/* check if we can add some additional info of other APIs */
+				/* check if we can add some additional info of perf timing API */
 				Util.updateResultsWithPerfTimingData(results, "open");
 				
 				scanFinishedCB(results);
