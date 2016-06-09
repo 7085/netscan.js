@@ -205,9 +205,19 @@ var NetScan = (function () {
 		
 		for(var i = 0; i < connections.length; i++){
 			for(var j = 0; j < results.length; j++){
-				// TODO websocket (ws) connections are also named with http://
-				// TODO some addresses get multiple entries
-				if(connections[i].name.indexOf(results[j].address) !== -1){
+				var entryName = connections[i].name;
+				/* trim trailing slash */
+				entryName = entryName.replace(/\/$/, "");
+				/** 
+				 * websocket (ws) connections are also named with http://
+				 * ftp addresses dont get an entry, so we just replace everything with http
+				 * ...for now
+				 */
+				var resultAddr = results[j].address.replace(/^.+?:\/\//, "http://")
+								 /* trim trailing slash */
+								 .replace(/\/$/, "");
+				
+				if(entryName === resultAddr){
 					results[j].status = statusNew;
 					results[j].info += "; "+ Scan.resultMsgPerfTiming;
 					break;
