@@ -19,6 +19,66 @@
 	<body>
 	<script src="../src/netscan.js"></script>
 	<script>
+	var RTCPeerConnection = window.RTCPeerConnection 
+		|| window.mozRTCPeerConnection 
+		|| window.webkitRTCPeerConnection 
+		|| window.msRTCPeerConnection;
+	var RTCSessionDescription = window.RTCSessionDescription 
+		|| window.mozRTCSessionDescription 
+		|| window.webkitRTCSessionDescription 
+		|| window.msRTCSessionDescription;
+	navigator.getUserMedia = navigator.getUserMedia 
+		|| navigator.mozGetUserMedia 
+		|| navigator.webkitGetUserMedia 
+		|| navigator.msGetUserMedia;
+	var RTCIceCandidate = window.RTCIceCandidate 
+		|| window.mozRTCIceCandidate 
+		|| window.webkitRTCIceCandidate 
+		|| window.msRTCIceCandidate;
+		
+	/**
+	 * SDP candidate line structure (a=candidate:)
+	 * 1 1 UDP 1686110207  80.110.26.244 50774 typ srflx raddr 192.168.2.108 rport 50774
+	 * 2 1 UDP 25108223 	237.30.30.30 58779 typ relay raddr   47.61.61.61 rport 54761
+	 * 0 			1 					UDP 				2122252543 		192.168.2.108 		52229 		typ host
+	 * candidate | rtp (1)/rtcp (2) | protocol (udp/tcp) | priority 	| ip				| port		| type (host/srflx/relay)
+	 **/
+	var Util = NetScan.Util;
+	/* rewrite here so we dont break anything in the lib */
+	Util.extractConnectionInfo = function(candidate){
+		var host = /(UDP|TCP) \d+ ((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate);
+		if(host !== null && host.length === 4){
+			return {type: "host", ip: host[2], port: host[3], public_ip: null, public_port: null, protocol: host[1]};
+		}
+
+		var srflx = /(UDP|TCP) \d+ ((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ srflx raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
+		if(srflx !== null && srflx.length === 6){
+			return {type: "srflx", ip: srflx[4], port: srflx[5], public_ip: srflx[2], public_port: srflx[3], protocol: srflx[1]};
+		}
+
+		var relay = /(UDP|TCP) \d+ ((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ relay raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
+		if(relay !== null && relay.length === 6){
+			return {type: "relay", ip: relay[4], port: relay[5], public_ip: relay[2], public_port: relay[3], protocol: relay[1]};
+		}
+
+		return null;
+	};
+
+	Util.replaceConnectionInfo = function(candidate, replacement){
+		var m = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate)
+			|| /((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
+
+		if(m !== null){
+			var t = candidate.replace(m[1], replacement.ip);
+			t = t.replace(m[2], replacement.port);
+			t = t.replace(/(UDP|TCP)/, "TCP");
+			//t = t.replace("typ host", "typ host tcptype active")
+			return t;
+		}
+
+		return candidate;
+	};
+		
 	/* globals / instance vars, might be exposed for debugging */
 	var connLocal,
 		connRemote,
@@ -66,7 +126,8 @@
 			var host = Util.extractConnectionInfo(candidate.candidate);
 			if(host !== null){
 				console.log("trying to manipulate ip", host);
-				host.ip = "192.168.2.108";
+				host.ip = "192.168.2.252";
+				host.port = "80";
 				candidate.candidate = Util.replaceConnectionInfo(candidate.candidate, host);
 				console.log("ip should now be different", candidate);
 			}
@@ -90,7 +151,8 @@
 			var host = Util.extractConnectionInfo(candidate.candidate);
 			if(host !== null){
 				console.log("trying to manipulate ip", host);
-				host.ip = "192.168.2.106";
+				host.ip = "192.168.2.35";
+				host.port = "80";
 				candidate.candidate = Util.replaceConnectionInfo(candidate.candidate, host);
 				console.log("ip should now be different", candidate);
 			}
@@ -214,8 +276,9 @@
 	}
 
 
-		NetScan.Scan.getHostIps(ips => {console.log(NetScan.Timer.durationInSec("getHostIps"), JSON.stringify(ips))});
+		//NetScan.Scan.getHostIps(ips => {console.log(NetScan.Timer.durationInSec("getHostIps"), JSON.stringify(ips))});
 		
+		test();
 	</script>
 
 		<h1>html stub for testing</h1>
