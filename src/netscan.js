@@ -1,14 +1,16 @@
-/**
- * // TODO description
- * Author: Tobias Fink
- **/
+/******************************************************************************
+ *                               - NetScan.js -                                
+ * A JavaScript library for client side host discovery and port scanning.
+ * 
+ * Author: Tobias Fink (e1026737@student.tuwien.ac.at)
+ *****************************************************************************/
 
 // eslint-disable-next-line no-unused-vars
 var NetScan = (function () {
 	"use strict";
 
 	/* temp object for export */
-	var T = {};
+	var Export = {};
 
 	////////////////////////////////////////////////////////////////////////////////
 
@@ -71,7 +73,7 @@ var NetScan = (function () {
 		return window.performance.now(); // in ms, micro-seconds fraction
 	};
 
-	T.Timer = Timer;
+	Export.Timer = Timer;
 
 	////////////////////////////////////////////////////////////////////////////////
 
@@ -81,13 +83,22 @@ var NetScan = (function () {
 	function Util(){}
 
 	/**
-	 * SDP candidate line structure (a=candidate:)
-	 * 1 1 UDP 1686110207  80.110.26.244 50774 typ srflx raddr 192.168.2.108 rport 50774
-	 * 2 1 UDP 25108223 	237.30.30.30 58779 typ relay raddr   47.61.61.61 rport 54761
-	 * 0 			1 					UDP 				2122252543 		192.168.2.108 		52229 		typ host
-	 * candidate | rtp (1)/rtcp (2) | protocol (udp/tcp) | priority 	| ip				| port		| type (host/srflx/relay)
-	 **/
+	 * Parses a WebRTC SDP and gathers all public and private ip and port 
+	 * combinations that can be found. 
+	 * @param String candidate The candidate SDP string.
+	 * @return Object Containing the entries type (the entry type),
+	 * ip (private ip address), port (private port), public_ip (public ip), 
+	 * public_port (public port), or null if nothing can be found, which is 
+	 * only the case if no valid candidate line is in the string.
+	 */
 	Util.extractConnectionInfo = function(candidate){
+		/**
+		 * SDP candidate line structure (a=candidate:)
+		 * 1 1 UDP 1686110207  80.110.26.244 50774 typ srflx raddr 192.168.2.108 rport 50774
+		 * 2 1 UDP 25108223 	237.30.30.30 58779 typ relay raddr   47.61.61.61 rport 54761
+		 * 0 			1 					UDP 				2122252543 		192.168.2.108 		52229 		typ host
+		 * candidate | rtp (1)/rtcp (2) | protocol (udp/tcp) | priority 	| ip				| port		| type (host/srflx/relay)
+		 **/
 		var host = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate);
 		if(host !== null && host.length === 3){
 			return {type: "host", ip: host[1], port: host[2], public_ip: null, public_port: null};
@@ -106,6 +117,14 @@ var NetScan = (function () {
 		return null;
 	};
 
+	/**
+	 * Replaces ip and port in a WebRTC SDP candidate line string with 
+	 * the data provided in replacement.
+	 * @param String A string containing a SDP candidate line.
+	 * @param Object replacement An object with ip and port properties which 
+	 * will replace the original ip and port.
+	 * @return The replaced string.
+	 */
 	Util.replaceConnectionInfo = function(candidate, replacement){
 		var m = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate)
 			|| /((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
@@ -119,10 +138,21 @@ var NetScan = (function () {
 		return candidate;
 	};
 
+	/**
+	 * Converts a string containing an ip4 address to an array of Numbers.
+	 * @param String ip An ip4 address.
+	 * @return Array containing the 4 octets as decimal numbers.
+	 */
 	Util.ipToArray = function(ip){
 		return ip.split(".").map(Number);
 	};
 
+	/**
+	 * Converts a range of ip addresses to an array which contains 
+	 * all single addresses. (Expands the range.)
+	 * @param String iprange A range of ip adresses, like "192.168.0.1-255"
+	 * @return Array of ip strings.
+	 */
 	Util.ipRangeToArray = function(iprange){
 		var ranges = [];
 		iprange.split(".").map(function(elem){
@@ -149,6 +179,12 @@ var NetScan = (function () {
 		return ips;
 	};
 
+	/**
+	 * Converts a range of ports in string representation 
+	 * to an array.
+	 * @param String portrange A portrange (two valid ports separated by -).
+	 * @return Array of ports (as Numbers).
+	 */
 	Util.portRangeToArray = function(portrange){
 		if(portrange.indexOf("-") !== -1){
 			var range = portrange.split("-").map(Number);
@@ -165,6 +201,14 @@ var NetScan = (function () {
 		}
 	};
 	
+	/**
+	 * Parses a string of ports and/or port ranges and 
+	 * creates an array containing all ports for easy 
+	 * iteration.
+	 * Example: "80,90,100-103" becomes [80,90,100,101,102,103]
+	 * @param String portstring The string containing ports.
+	 * @return Array of ports.
+	 */
 	Util.portStringToArray = function(portstring){
 		if(portstring.indexOf(",") !== -1){
 			var ports = [];
@@ -178,6 +222,11 @@ var NetScan = (function () {
 		}
 	};
 	
+	/**
+	 * Determines if a specific ip is a local address.
+	 * @param String/Array ip The ip address.
+	 * @return Bool True if the ip is local.
+	 */
 	Util.isPrivateIp = function(ip){
 		if(typeof ip === "string"){
 			ip = Util.ipToArray(ip);
@@ -190,6 +239,14 @@ var NetScan = (function () {
 		}
 	};
 	
+	/**
+	 * Merges and updates an array of scan results with data 
+	 * obtained by the performance timing API.
+	 * @param Array results An array of entries of type ScanResult obtained by 
+	 * one of the scan functions.
+	 * @param String statusNew The new status that will be set when data can be 
+	 * associated with a scan result.
+	 */
 	Util.updateResultsWithPerfTimingData = function(results, statusNew){
 		/**
 		 * differences in chrome: currently no entries for failed resources, see:
@@ -226,12 +283,15 @@ var NetScan = (function () {
 		}
 	};
 	
+	/**
+	 * Purges the perfomance timing records of type "resource".
+	 */
 	Util.clearPerfTimingData = function(){
 		performance.clearResourceTimings();
 	};
 	
 	
-	T.Util = Util;
+	Export.Util = Util;
 
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -891,9 +951,9 @@ var NetScan = (function () {
 
 	};
 
-	T.Scan = Scan;
+	Export.Scan = Scan;
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	return T;
+	return Export;
 }());
