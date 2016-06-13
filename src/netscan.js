@@ -987,7 +987,7 @@ var NetScan = (function () {
 			/* timing */
 			else if(timing >= Scan.portScanTimeout){
 				status = "open";
-			}
+			} // TODO timing add info about closed when timing is low?
 			/* response */
 			else if((info.indexOf(Scan.resultMsgData) !== -1)
 			|| (info.indexOf(Scan.resultMsgConnected) !== -1)){

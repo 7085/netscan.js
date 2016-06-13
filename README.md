@@ -125,9 +125,33 @@ Actually they are only using *XmlHttpRequests* to probe combinations of ip and p
 
 Approach
 --------
+This section describes all details of the library, what it is capable of and how the 
+different techniques work.
 
-// TODO how does it work, technique, methods, architecture
-// TODO differences/advantages over existing projects
+### Browser support
+The library was tested in the following browsers:
+- Chromium (Version 51.0.2704.79 Built on 8.4, running on Debian 8.5 (64-bit)
+- Iceweasel 38.8.0 Debian 8.5 (64-bit) (Firefox)
+
+A few differences exist, because of the varying support of current specifications of the 
+web platform. 
+- The fetch API is fully supported in Firefox >= 40. In the tests in Iceweasel 
+  38.8.0 it did not provide information in opaque requests. See: http://caniuse.com/#feat=fetch
+- The version of Chromium did only expose partial information in the performance timing API.
+  This will be very likely fixed in future versions, see: [21].
+  
+In general the library should be fully functional in any browser which fully supports the 
+fetch API, performance timing API, WebRTC, Websockets, Promises and Arrow Functions.
+
+### Library Structure
+
+### Supported Functionality
+
+#### Host scan
+
+#### Port scan
+
+### Advantages over existing projects
 
 Limitations
 -----------
