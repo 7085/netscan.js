@@ -271,8 +271,8 @@ var NetScan = (function () {
 				 * ...for now
 				 */
 				var resultAddr = results[j].address.replace(/^.+?:\/\//, "http://")
-								 /* trim trailing slash */
-								 .replace(/\/$/, "");
+					/* trim trailing slash */
+					.replace(/\/$/, "");
 				
 				if(entryName === resultAddr){
 					results[j].status = statusNew;
@@ -326,6 +326,8 @@ var NetScan = (function () {
 	 **/
 	Scan.socketPool = [];
 	Scan.poolCap = 130;
+	Scan.maxConcurrentHTMLRequests = 5; /* 	This value should be kept very low (<= 10), 
+											otherwise many wrong results will be produced */
 	
 	/**
 	 * Timing default settings.
@@ -675,7 +677,7 @@ var NetScan = (function () {
 		var requ = fetch(address, config);
 
 		var p = Promise.race([timeout, requ]);
-		p.then((resp) => {
+		p.then((/* resp */) => {
 			// console.log(resp.headers);
 			// console.log(resp.type, resp.ok, resp.status, resp.statusText);
 			// resp.text().then((body) => {
@@ -763,11 +765,69 @@ var NetScan = (function () {
 		
 		timeout = setTimeout(function(){
 			handleSingleResult(address, Timer.getTimestamp() - startTime, Scan.resultMsgTimeout);
+			/* this will cancel the request */
+			request.onload = request.onerror = function(){};
+			request.src = "";
 		}, connectionTimeout);
 		
 		startTime = Timer.getTimestamp();
 		/* start the request */
 		request.src = address;
+	};
+	
+	
+	/**
+	 * Performs a scan by creating requests through html elements on an ip range and 
+	 * interprets the results which will be passed to the callback 
+	 * as soon as the scan process has finished.
+	 * @param String iprange A range of ips.
+	 * @param Function scanFinishedCB The callback which gets the results.
+	 * 		Array results Containing result objects for each address.
+	 **/
+	Scan.getHostsHTML = function(iprange, scanFinishedCB){
+		var results = [];
+		var protocol = "http://";
+		var addresses = Util.ipRangeToArray(iprange);
+		/* Needed because we can only make a very small amount of simultaneous requests... */
+		var concurrentRequests = 0;
+		var requestsMade = 0;
+
+		function handleSingleResult(address, timing, info){
+			concurrentRequests--;
+			var status = timing < Scan.timingLowerBound || timing > Scan.timingUpperBound ? "up" : "down";
+			results.push(new ScanResult(
+				address, 
+				timing, 
+				status, 
+				info
+			));
+
+			/* last result received, return */
+			if(results.length === addresses.length){
+				/* check if we can add some additional info of perf timing API */
+				Util.updateResultsWithPerfTimingData(results, "up");
+				
+				scanFinishedCB(results);
+			}
+		}
+		
+		/* clear all perftiming entries for reliable results */
+		Util.clearPerfTimingData();
+		
+		var requestMonitor = setInterval(function(){
+			if(requestsMade >= addresses.length){
+				clearInterval(requestMonitor);
+			}
+			else {
+				if(concurrentRequests < Scan.maxConcurrentHTMLRequests
+				&& requestsMade < addresses.length){
+					Scan.createConnectionHTML(protocol + addresses[requestsMade], handleSingleResult);
+					concurrentRequests++;
+					requestsMade++;
+				}				
+			}
+		}, 100);
+		
 	};
 
 
