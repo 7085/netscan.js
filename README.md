@@ -132,7 +132,28 @@ Approach
 Limitations
 -----------
 
-// TODO
+Browsers only expose high level functionality to interact with the network and remote machines.
+This results in general in a larger number of false positives or false negatives, because of
+the inability to inspect or send specially crafted network packets (like popular network 
+scanners like nmap do [37]), which would allow a much more fine grained categorization and 
+identification. The traffic that can be generated is also limited to TCP. Although WebRTC 
+would be able to send UDP packets, this can not be used for our scanning purposes.
+
+Further additional restrictions apply to different APIs and protocols, like 
+*Cross-Origin-Resource-Sharing (CORS)* [6] [7] [35], *Content Security Policies (CSP)* [36] and 
+blocking of specific ports for different protocols [30] [31] [32] [34]. CORS and CSP 
+can be evaded by relying on side channel information, metadata and correlate data from 
+different JavaScript APIs with request data. Even though we can not access response 
+information directly we can derive certain information about a response with that technique.
+Unfortunately the **port blocking cannot be bypassed**. The only possibility which exists, is 
+using a protocol which allows a required port to be accessed. While there exist some more 
+protocols than the common http and https ones, most others are only for viewing internal 
+browser (debugging) data and can not be used for network requests. A single exception exists, 
+the ftp protocol. It allows connections to ports 21 and 22. The downside is that the ftp 
+scheme only works in combination with HTML based requests, which have a lower performance 
+and result accuracy and information than the other scan types. In the future browsers might 
+also remove their ftp capabilities, because of the small usage numbers [33].
+
 
 References
 ----------
@@ -160,4 +181,27 @@ not integrated yet:
 
 - [19]: https://www.w3.org/TR/resource-timing/
 - [20]: https://developer.mozilla.org/en-US/docs/Web/API/Resource_Timing_API/Using_the_Resource_Timing_API
+- [21]: https://bugs.chromium.org/p/chromium/issues/detail?id=460879#c11
 
+- [22]: https://fetch.spec.whatwg.org/
+- [23]: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API
+
+- [24]: https://xhr.spec.whatwg.org/
+- [25]: https://www.w3.org/TR/XMLHttpRequest2/
+- [26]: https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest
+
+- [27]: https://tools.ietf.org/html/rfc6455
+- [28]: https://www.w3.org/TR/2011/WD-websockets-20110929/
+- [29]: https://developer.mozilla.org/de/docs/Web/API/WebSocket
+
+// ports,protocols & restrictions
+- [30]: https://fetch.spec.whatwg.org/#port-blocking
+- [31]: https://cs.chromium.org/chromium/src/net/base/port_util.cc?q=kRestrictedPorts&sq=package:chromium&dr=CSs&l=22
+- [32]: https://developer.mozilla.org/en-US/docs/Mozilla/Mozilla_Port_Blocking
+- [33]: https://bugs.chromium.org/p/chromium/issues/detail?id=333943
+- [34]: https://dxr.mozilla.org/mozilla-central/search?q=%2Boverrides%3A%22nsIProtocolHandler%3A%3AAllowPort%28int32_t%2C+const+char+*%2C+bool+*%29%22
+
+- [35]: https://www.w3.org/TR/cors/
+- [36]: https://www.w3.org/TR/CSP2/
+
+- [37]: https://nmap.org/book/man-port-scanning-techniques.html
