@@ -213,7 +213,7 @@ changes of the JavaScript objects or possible results of the requests, if such i
 is available. This depends on the used scan technique. Also any available network error 
 information of the connections and the JavaScript objects is used.
 
-Furthermore information of the performance timing API is used. This API should provide 
+Furthermore information of the performance timing API [19] [20] is used. This API should provide 
 detailed timing information for website developers. For security reasons only start, end and 
 duration times will be exposed when the origin of a requested resource violates the 
 same-origin policy. During tests while developing NetScan.js it was observed, that as soon as 
@@ -281,7 +281,7 @@ References
 - [10]: https://webrtc.org/
 - [11]: https://tools.ietf.org/html/rfc6455
 
-not integrated yet:
+not integrated yet (12 - 17):
 - [12]: https://webrtchacks.com/the-minimum-viable-sdp/
 - [13]: https://github.com/fippo/minimal-webrtc
 - [14]: https://github.com/WesselWessels/minisdp
@@ -306,7 +306,6 @@ not integrated yet:
 - [28]: https://www.w3.org/TR/2011/WD-websockets-20110929/
 - [29]: https://developer.mozilla.org/de/docs/Web/API/WebSocket
 
-// ports,protocols & restrictions
 - [30]: https://fetch.spec.whatwg.org/#port-blocking
 - [31]: https://cs.chromium.org/chromium/src/net/base/port_util.cc?q=kRestrictedPorts&sq=package:chromium&dr=CSs&l=22
 - [32]: https://developer.mozilla.org/en-US/docs/Mozilla/Mozilla_Port_Blocking
