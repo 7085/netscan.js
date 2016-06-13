@@ -145,6 +145,31 @@ fetch API, performance timing API, WebRTC, Websockets, Promises and Arrow Functi
 
 ### Library Structure
 
+The library will export the symbol "NetScan" and make its methods globally available. It is 
+divided into 3 sub-modules. The modules "Timer" and "Util" contain functions for time 
+measurement and parsing and data structure preparation respectively. The module "Scan" 
+provides all functions for network scanning, the core of the library. Those will be 
+summarized as follows:
+
+- `getHostIps` detects which local and which public ip addresses are associated with the 
+  local machine.
+
+- The `createConnection*`-functions (`createConnectionXHR, createConnectionWS, createConnectionFetch, createConnectionHTML`) 
+  are designed to establish a connection to a specific address and gather information. The 
+  suffix indicates which technology/API will be used to do this.
+
+- The `getHosts*`-functions (`getHostsXHR, getHostsWS, getHostsFetch, getHostsHTML`) will 
+  scan a range of ip addresses and perform host discovery. They will merge information 
+  obtained from different data sources and aggregate all results in an array of 
+  `ScanResult`-objects.
+
+- `getHostsLocalNetwork` automatically scans all hosts in the current local network. One of 
+  the `getHosts*`-functions can be provided to change the scan method.
+
+- `getPorts` can be used to scan various ports of a single host. One of the `createConnection*`-functions 
+  can be used to change the technology which will be used. Due to browser restrictions some 
+  ports cannot be scanned, those will be reported as "BLOCKED". 
+
 ### Supported Functionality
 
 #### Host scan

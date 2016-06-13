@@ -352,7 +352,7 @@ var NetScan = (function () {
 	Scan.resultMsgPerfTiming = "PERF-TIMING CONNECTION RECORD";
 
 	/**
-	 * Retrieves all private and public ip address
+	 * Retrieves all private and public ip addresses
 	 * and ports assigned to the current host.
 	 * @param Function cbReturn
 	 * 	Gets a list of ip and port combinations which were
