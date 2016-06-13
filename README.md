@@ -171,8 +171,33 @@ summarized as follows:
   ports cannot be scanned, those will be reported as "BLOCKED". 
 
 ### Supported Functionality
+For all scan types, four different technologies can be used: The fetch API, Websockets, 
+XMLHttpRequests or HTTP requests through HTML elements. They all differ in the amount of 
+information they expose as well as performance (how fast can a certain number of hosts be 
+scanned). 
+
+The fetch API is usually the best technology, as observed in the tests. It can scan 
+a large number of hosts in a relatively small amount of time and also supports something 
+called "opaque" requests. Those can be used to determine if a remote host understands the 
+HTTP protocol even if it does not send CORS headers. The only downside is that a very new 
+browser version is required and several browsers still do not support this new API.
+
+XMLHttpRequests also have a good performance. Like "fetch"-requests the browser does not 
+impose very restricitve limitations on the amount of requests which can be dispatched 
+concurrently.
+
+Websockets perform significantly worse. Browsers have certain hard limits on the number of 
+simultaneously created Websockets. Firefox caps this number at 200. The number of sockets 
+which are active at the same time has to be controlled and limited by the library. This 
+increases the scan time.
+
+The last variant of establishing a connection by creating a HTML element is the slowest. 
+Simultaneous requests are severly limited. Scans using this method can take a very long time.
+In addition no internal state changes can be accessed, thus less detailed information 
+gathered.
 
 #### Host scan
+Host discovery 
 
 #### Port scan
 
