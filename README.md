@@ -234,6 +234,12 @@ available (fetch, performance timing API). The details can be found documented i
 code.
 
 ### Advantages over existing projects
+To the best of my knowledge all other existing libraries only use very little information. 
+Most of the time they only use timing data. None of them uses the modern fetch API which has 
+several advantages. NetScan.js can determine host and port states with a much higher accuracy 
+because it accesses and combines multiple sources of information. The timing model does not 
+only decide the status based on a single threshhold and can be easily configured individually 
+for each scan method.
 
 Limitations
 -----------
