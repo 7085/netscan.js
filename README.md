@@ -197,9 +197,41 @@ In addition no internal state changes can be accessed, thus less detailed inform
 gathered.
 
 #### Host scan
-Host discovery 
+Host discovery is based mainly on timing information. The time it takes between starting a 
+request and the arrival of its response, or when its timeout is triggered, is measured. 
+When a host exists at a certain ip address, they will most likely either respond very fast 
+(within a few hundred milliseconds) or take a very long time, because they keep the tcp 
+connection open or simply do not respond. When a host does not exist at a specific address 
+the browser will abort the connection after about 3000 milliseconds. When observing the 
+network traffic one can see that multiple ARP requests are made. After not receiving a 
+response for 3 seconds the browser will give up. In the library per default connections which 
+take between 2900 milliseconds and 10000 milliseconds are considered that ther is no active 
+remote host. All others are initially considered as up.
+
+The results obtained from the timing information are refined by data from internal state 
+changes of the JavaScript objects or possible results of the requests, if such information 
+is available. This depends on the used scan technique. Also any available network error 
+information of the connections and the JavaScript objects is used.
+
+Furthermore information of the performance timing API is used. This API should provide 
+detailed timing information for website developers. For security reasons only start, end and 
+duration times will be exposed when the origin of a requested resource violates the 
+same-origin policy. During tests while developing NetScan.js it was observed, that as soon as 
+some data is received when establishing a connection to some remote address, a duration time 
+will be recorded. This allows us to determine if a remote host has some service running at 
+a certain address or not.
 
 #### Port scan
+Port scanning works similar to host scanning, but the parameters for timing and how the 
+status is determined are different. Additionally blocked ports need to be considered. 
+In general blocked ports cannot be tested, only the FTP ports 21 and 22 are an exception, 
+where a HTML scan is applicable. Timing data is also less informative, because only 2 cases 
+are distinguishable: Either the port is closed, or open and responds with some data and 
+closes the TCP connection fast. In the other case the connection is kept open and hangs, 
+most of the time until the connection is closed by us or because of some implementation 
+dependent timeout. Further cases can only be differentiated when additional information is 
+available (fetch, performance timing API). The details can be found documented in the source 
+code.
 
 ### Advantages over existing projects
 
