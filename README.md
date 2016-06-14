@@ -267,6 +267,43 @@ and result accuracy and information than the other scan types. In the future bro
 also remove their ftp capabilities, because of the small usage numbers [33].
 
 
+Further tests
+-------------
+This section describes experiments which were conducted during the development of NetScan.js, 
+but did not yield the expected or useful results. Some of the tests are still included in 
+the "test" subfolder.
+
+It was tried to extract connection information and timing data from WebRTC in order to 
+use it for network scans. Although there exist many points where internal state data can be 
+accessed it did not prove as useful. A meaningful conclusion cannot be drawn, as there are 
+not much differences in the internal processing between existing and non-existing hosts. 
+In a second attempt various manipulations on the SDP which is used in WebRTC [16] were 
+tested. The goal was to establish arbitrary connections to any ip address chosen by us. 
+I was able to achieve to send packets to addresses chosen manually, but I did not manage 
+to get manually crafted data through, as no ICE connection was established. This could 
+need further exploration, because WebRTC and the internal mechanisms are rather complex and 
+include a lot of different specifications and RFCs. Some useful information on SDP can be 
+found at [12] [13] [13] [14] [15] [17].
+
+Another experiment was dedicated to reading cross-origin content. Based on previous research 
+[38] [39] and using recent web API specifications [40] [41], I tried finding similar timing 
+side channel attacks in various combinations of SVG features (especially filters), cross 
+origin resources, WebGL and various other JavaScript methods. Unfortunately nothing of 
+significance was found.
+
+In combination with the fetch API, also a new feature called "Service Workers" [42] [43] [44] 
+was inspected. They were designed to make a website also work offline and being able to make 
+better use of the browser cache. Service Workers allow precise control over which resources 
+are cached and which resources will get served when a request is made. It is also possible 
+to intercept requests and manipulate them on the fly. So I tried if any advantage can be 
+gained when fiddling around with requests and responses. After investigating the browser 
+source code I learned that data which is caches by Service Workers is transformed multiple 
+times based on their attributes. The only problem is that most properties of the JavaScript 
+Request/Response-objects are read only. Although they can be overwritten by some JavaScript 
+hacks, the changes could not be propagated to the browsers internal objects. Most likely this 
+was because of some sandboxing mechanisms. Still there are further possibilities which 
+could be tried to extract some cross origin information. 
+
 References
 ----------
 - [1]: http://www.golgi.io/excuse-me-sir-your-webrtc-is-leaking/
@@ -281,7 +318,6 @@ References
 - [10]: https://webrtc.org/
 - [11]: https://tools.ietf.org/html/rfc6455
 
-not integrated yet (12 - 17):
 - [12]: https://webrtchacks.com/the-minimum-viable-sdp/
 - [13]: https://github.com/fippo/minimal-webrtc
 - [14]: https://github.com/WesselWessels/minisdp
@@ -316,3 +352,12 @@ not integrated yet (12 - 17):
 - [36]: https://www.w3.org/TR/CSP2/
 
 - [37]: https://nmap.org/book/man-port-scanning-techniques.html
+
+- [38]: R. Kotche, Y. Pei and P. Jumde, "Stealing cross-origin pixels: Timing attacks on CSS filters and shaders" 2013. \[Online\]. Available: http://www.robertkotcher.com/pdf/TimingAttacks.pdf
+- [39]: P. Stone, "Pixel Perfect Timing Attacks with HTML5" 2013. \[Online\]. Available: http://www.contextis.com/documents/2/Browser_Timing_Attacks.pdf
+- [40]: https://www.w3.org/TR/html51/webappapis.html#animation-frames
+- [41]: https://svgwg.org/svg2-draft/
+
+- [42]: http://www.html5rocks.com/en/tutorials/service-worker/introduction/
+- [43]: https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API
+- [44]: https://www.w3.org/TR/service-workers/
