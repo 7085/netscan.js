@@ -35,6 +35,22 @@ var NetScan = (function () {
 		|| window.webkitRTCIceCandidate 
 		|| window.msRTCIceCandidate;
 	/* eslint-enable no-unused-vars */
+	
+	/**
+	 * Feature detect, issues warning when something is not supported by the browser.
+	 */
+	if(!window.fetch){
+		console.warn("This browser does not support the fetch API - lowered result accuracy!");
+	} 
+	if(!window.performance){
+		console.warn("This browser does not support the performance API - lowered result accuracy!");
+	} 
+	if(!RTCPeerConnection){
+		console.warn("This browser does not support the WebRTC API - cannot detect local IP!");
+	}
+	if(!window.WebSocket){
+		console.warn("This browser does not support the WebSocket API - WebSocket scanning not possible!");
+	}
 
 	////////////////////////////////////////////////////////////////////////////////
 
@@ -374,7 +390,7 @@ var NetScan = (function () {
 		conn.onicecandidate = function(evt){
 			if(evt.candidate !== null){
 				var candidate = evt.candidate;
-				console.log("Got candidate:", candidate.candidate);
+				//console.log("Got candidate:", candidate.candidate);
 
 				var host = Util.extractConnectionInfo(candidate.candidate);
 				if(host !== null){
@@ -391,7 +407,7 @@ var NetScan = (function () {
 				conn.close();
 				sendChan = null;
 				conn = null;
-				console.log("getting ip took:", Timer.duration("getHostIps"));
+				//console.log("getting ip took:", Timer.duration("getHostIps"));
 				cbReturn(ips);
 			}
 		};
@@ -607,6 +623,11 @@ var NetScan = (function () {
 
 		function handleSingleResult(address, timing, info){
 			var status = timing < Scan.timingLowerBound || timing > Scan.timingUpperBound ? "up" : "down";
+			
+			if(info === Scan.resultMsgConnected){
+				status = "up";	
+			}
+			
 			results.push(new ScanResult(
 				address, 
 				timing, 
@@ -711,6 +732,11 @@ var NetScan = (function () {
 
 		function handleSingleResult(address, timing, info){
 			var status = timing < Scan.timingLowerBound || timing > Scan.timingUpperBound ? "up" : "down";
+			
+			if(info === Scan.resultMsgData){
+				status = "up";	
+			}
+			
 			results.push(new ScanResult(
 				address, 
 				timing, 
@@ -795,6 +821,11 @@ var NetScan = (function () {
 		function handleSingleResult(address, timing, info){
 			concurrentRequests--;
 			var status = timing < Scan.timingLowerBound || timing > Scan.timingUpperBound ? "up" : "down";
+			
+			if(info === Scan.resultMsgData){
+				status = "up";	
+			}
+			
 			results.push(new ScanResult(
 				address, 
 				timing, 
