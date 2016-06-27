@@ -1,46 +1,52 @@
-Client side network scanning with JavaScript
-============================================
+NetScan.js - Browser based Network Scanner
+==========================================
 
 
 Introduction
 ------------
 
-The ongoing development and extensions to the JavaScript language opened up numerous new possibilities for web based applications
-that heavily rely on data transfer over the network. In the beginning it was only possible to send HTTP requests through 
-different means. Now also fast socket and peer-to-peer like connections with less overhead and higher troughput can be established.
+The ongoing development and extensions to the JavaScript language and Web standards opened up numerous new possibilities for web based applications 
+to communicate over the network. In the beginning it was only possible to send HTTP requests and responses through 
+different browser mechanisms. Now also fast socket and peer-to-peer like connections with less overhead and higher troughput can be established.
 
 All that can also be used to perform network discovery operations. 
 Host scanning, port scanning, private and public IP detection are achievable.
-This may lead to deanonymization or exploitation of local network devices like routers and printers which often employ very weak
+This may lead to the identification and subsequently exploitation of local network devices like routers and printers which often employ very weak
 or no security measures at all. CSRF, router reconfiguration, DNS manipulation and disclosure of sensitive data would be some examples.
-Four different methods with varying potential regarding performance, scanning capabilities, result reliability and browser support.
+Furthermore other services like web servers running in internal networks can be at risk, when such a discovery tool can be deployed through some 
+cross site scripting (XSS) vulnerability.
+Four different methods with varying potential regarding performance, scanning capabilities, result reliability and browser support were 
+commonly used by different libraries which exist in this area.
 
 *IMG probing* is the oldest technique. The name is not any standardized concept or JavaScript language feature. It is just a descriptive
-term for this particular method. First a HTML DOM `img` element is created, then two event handler functions are registered for the 
-`load` and `error` events and the `src` attribute is set to some non exsitent image URL on the host/port to test. In the last step 
-a timer is started and the image element is inserted into the DOM, which will start a HTTP request which will try to retrieve the image.
+term for this particular method. First a `Image` object is created, then two event handler functions are registered for the 
+`load` and `error` events and the `src` attribute is set to some arbitrary image URL on the host/port to test. Most likely this source does not exist. 
+In the last step a timer is started. The setting of the `src` attribute will start a HTTP request which will try to retrieve the image.
 In the event handlers another timer is set when one of the events fires. The time span of the timers can then be used and compared to
 some predefined values in order to determine whether the server is online and the image could not be found or the server is offline.
-Actually there are several other HTML elements which might be used for this purpose, but `img`-elements are the most common ones.
-This technique is rather limited because it satisfies scanning if a host is alive or not to a certain extent. It can also be used 
+Actually there are several other HTML elements which might be used for this purpose, but `img`-elements are the most commonly used ones.
+Their advantage is that an interaction with the HTML DOM is not necessarily required, as it would be the case with `iframe` or `script` elements.
+This technique is rather limited because it satisfies scanning if a host is alive or not only to a certain extent. It can also be used 
 for port scanning, but the results won't be very precise or reliable. More on the port scanning part with this method can be found in [4].
 
 *XHR* short for *XMLHttpRequest* stands for the JavaScript object with the same name which is used to issue various types of HTTP requests [5].
-This method is similar to previous one, but does not need to interact with the DOM. Again this method depends on timing checks which are made
+This method is similar to the previous one, but does not need to interact with the DOM. Again this method depends on timing checks which are made
 when the `readystate` property of the *XMLHttpRequest* object changes. Depending on how long the request takes a conclusion about the host or 
 port can be drawn. The result of the actual request is irrelevant, as the same-origin-policy will interfere with most of them [6] [7].
 
-*Websocket* is a protocol for client server socket like communication. It allows a much more fine grained distinction when scanning for 
+*WebSocket* is a protocol for client-server, socket like communication. It allows a much more fine grained distinction when scanning for 
 active hosts in a network than the former methods. In addition it is also faster, because timing values can be lowered as a result of the low 
 protocol overhead. Also more connection error messages are available. Timing in combination with checking setup and error messages can be used 
 for host and port analysis. The same-origin-policy is also less problematic because it has to be checked by the remote server to which the 
-connection is made and can be denied, but the browser does not restrict such a connection attempt [3] [11].
+connection is made and can be denied, but the browser does not restrict such a connection attempt [3] [11]. Initially a HTTP request will be 
+dispatched when trying to establish a connection. So in fact this is just a slightly different method, containing different meta information 
+as the *XHR* method.
 
 *WebRTC* [9] [10] which stands for "Web Real Time Communication" is a very new API and still not completely implemented in almost all browsers [8].
 It enables peer-to-peer data transfer in the browser and features some NAT traversal capabilities for maximum connectivity.
 Programmatically it requires much more code and is rather complex in contrast to the previous methods. However the advantage are the 
-possibilites it opens for network discovery. It can gather live hosts in the local network of a browser as well as private and public ip 
-addresses of the client. Furthermore it can be used to fingerprint Chromium-based browsers by collecting their "Device-ID". 
+possibilites it opens for network discovery. It is perfectly suited for reliably determining private and public ip 
+addresses of the client (browser). Furthermore it can be used to fingerprint browsers by collecting their "Device-ID". 
 Such a fingerprint is resistant to ISP or IP changes, browser and system restarts and browser cookie or cache wipes by third party addons. [1] [2] [3] 
 
 
@@ -50,52 +56,51 @@ Related work
 In this section the most prominent projects related to client side network scanning with JavaScript are discussed.
 They are grouped in categories according to the technological methods they are using.
 The category "Mixed" contains projects that combine multiple techniques.
-To the best of my knowledge no programs that only use *Websockets* exist.
-Those that are mainly based on *Websockets* always contain some kind of fallback mechanism, when this type of socket is not available.
+To the best of my knowledge no programs that only use *WebSockets* exist.
+Those that are mainly based on *WebSockets* always contain some kind of fallback mechanism, when this type of API is not available.
 
 ### Mixed:
 - http://www.andlabs.org/tools/jsrecon/jsrecon.html (at least since 2011, exact date unknown)
   JSRecon is only guaranteed to work on Windows machines and although it is designed to scan internal networks only, it is possible to scan
-  arbitrary external networks after some small changes in the source code. The scanning is done by using *XHR* and *Websockets*.
+  arbitrary external networks after some small changes in the source code. The scanning is done by using *XHR* and *WebSockets*.
   The timing of the internal states and state changes of those JavaScript objects is measured and compared to predefined values.
-  That allows the detection of the status of the remote end (open, closed, etc.).
+  That allows the detection of hosts and the status of remote ports (open, closed, etc.).
 - https://github.com/beefproject/beef/wiki/Network-Discovery 
   BeEF includes several modules for network exploration: 
   - One which gets the internal lan ip by using *WebRTC* or a *Java applet*. (since 2013)
   - Lan subnet identification and host checking (ping sweep) by timed *XHR* or a *Java applet*. (since 2015/2011)
   - Host checking (like above with timed *XHR*) while also considering DNS resolution ("DNS enumeration module"). (since 2011)
-  - Port scanning which combines *XHR*, *Websockets* and *IMG probing* and timing all three methods. (since 2011)
+  - Port scanning which combines *XHR*, *WebSockets* and *IMG probing* and timing all three methods. (since 2011)
   - identifying routers and different server software by loading commonly used resources with *IMG probing*. Modules "internal network fingerprinting", "js lanscanner" and "get http servers". (since 2011/2015/2015)
 - http://algorithm.dk/lanscan (2015)
-  This is a very modern implementation using *WebRTC* and *Websockets* based on the blogpost at [1].
+  This is a very modern implementation using *WebRTC* and *WebSockets* based on the blogpost at [1].
   The tool ("lanscan") is able to scan the local network. In the initial step *WebRTC* is used to find the clients local ip.
-  Afterwards a *Websocket* connection is opened to scan for possible hosts using the internal socket state to determine the final status.
+  Afterwards a *WebSocket* connection is opened to scan for possible hosts using the internal socket state to determine the final status.
   Although on the blog it is stated that several things are planned and an article explaining the concept will appear soon, this project
-  has not been updated for a longer time.
+  has not been updated for a longer time. A very short timeout is used to speed up scan times, but sacrificing result accuracy.
 - https://thehackerblog.com/sonar-a-framework-for-scanning-and-exploiting-internal-hosts-with-a-webpage/ (2015)
-  "sonar.js" is designed as a framework for local network and especially router exploitation.
-  The network discovery methods of the "lanscan" tool are used for this purpose. 
+  "sonar.js" was designed as a framework for local network and especially router exploitation.
+  The exact same network discovery methods of the "lanscan" tool are used for this purpose. 
   After the hosts that are alive are recorded, an identification process starts. 
   It tries to load resources like images and stylesheets which are present in the web administration panels of routers.
-  A predefined database where those common resource files are defined is included, although it is smaller than those used by the BeEF project.
+  A predefined database where those common resource files are defined is included. The fingerprint database is much smaller than those used by the BeEF project.
   It also seems that this project has been abandoned, because the last updates are several months old.
 - https://github.com/joevennix/lan-js (2015)
   "lan-js" is made for identifying/fingerprinting routers.
   The author(s) took the code for identifying the local ip from BeEF as can be seen in ip\_discovery.js
-  *Websockets* or *IMG loading* (depending on which is available) is used to find active hosts in the local network.
+  *WebSockets* or *IMG loading* (depending on which is available) is used to find active hosts in the local network.
   *IMG loading* is also used for fingerprinting afterwards. Code for detecting css stylesheet fingerprints is also included, but their
   database contains only image fingerprints.
 - https://dunnesec.com/2013/09/16/html5-webrtc-local-ip-discovery/ (2013)
   First the local ip is detected by this JavaScript. Based on this result the local network is scanned for active hosts.
   The simple *IMG loading* is used for this. The author states that it works on all popular desktop operating systems (Win, OSX, Linux) with Firefox
-  and that it does not work in Chrome on Linux. In my test in Firefox on Linux it reported many false positives. 
-  In Windows it did work better, however still not 100% accurate.
+  and that it does not work in Chrome on Linux.
 
 ### IMG Probing:
 The approach to create a HTML "img" element and set the "src" attribute to load an arbitrary URL through HTTP GET requests and measure the time
 it takes to get a response and record possible errors is the oldest technique to determine if a host exists. This can also be used to scan
 ports. The disadvantage is that only limited cases can be distinguished and the rate of false negatives can be high. For example when
-the remote hosts waits for some input and hangs the host might be classified as dead although it is not.
+the remote host waits for some input and hangs the host might be classified as dead although it is not.
 Most of the JavaScript "network scanner" follow this technique and very old versions can be found.
 Some try to optimize the performance by batch processing, but at its core the code is always very similar.
 Additional information is only given when they did something special.
@@ -115,28 +120,26 @@ Additional information is only given when they did something special.
 ### XHR:
 - https://github.com/skepticfx/scanner.skepticfx.com (2013)
 The authors Ahamed Nafeez M. and Anjana G. are stating that they are using: 
-
 > Pure + Awesome Websockets & Cross-Origin Resource Sharing features of the browser to scan internal network hosts and IP Addresses.
-
-Actually they are only using *XmlHttpRequests* to probe combinations of ip and port together with timing to determine if a host is alive. 
-
-
+Actually they are only using *XHR* to probe combinations of ip and port together with timing to determine if a host is alive. 
 
 
 Approach
 --------
-This section describes all details of the library, what it is capable of and how the 
+This section describes all details of the "NetScan.js"-library, what it is capable of and how the 
 different techniques work.
 
 ### Browser support
 The library was tested in the following browsers:
 - Chromium (Version 51.0.2704.79 Built on 8.4, running on Debian 8.5 (64-bit)
 - Iceweasel 38.8.0 Debian 8.5 (64-bit) (Firefox)
+- Firefox 45.2.0 Debian 8.5 (64-bit)
 
 A few differences exist, because of the varying support of current specifications of the 
 web platform. 
 - The fetch API is fully supported in Firefox >= 40. In the tests in Iceweasel 
   38.8.0 it did not provide information in opaque requests. See: http://caniuse.com/#feat=fetch
+  In the 45.2.0 version of Firefox that was used in the tests, everything worked as expected.
 - The version of Chromium did only expose partial information in the performance timing API.
   This will be very likely fixed in future versions, see: [21].
   
@@ -148,7 +151,7 @@ fetch API, performance timing API, WebRTC, Websockets, Promises and Arrow Functi
 The library will export the symbol "NetScan" and make its methods globally available. It is 
 divided into 3 sub-modules. The modules "Timer" and "Util" contain functions for time 
 measurement and parsing and data structure preparation respectively. The module "Scan" 
-provides all functions for network scanning, the core of the library. Those will be 
+provides all functions for network scanning, the core of the library. Those methods will be 
 summarized as follows:
 
 - `getHostIps` detects which local and which public ip addresses are associated with the 
@@ -156,7 +159,7 @@ summarized as follows:
 
 - The `createConnection*`-functions (`createConnectionXHR, createConnectionWS, createConnectionFetch, createConnectionHTML`) 
   are designed to establish a connection to a specific address and gather information. The 
-  suffix indicates which technology/API will be used to do this.
+  symbol-suffix indicates which technology/API will be used to do this.
 
 - The `getHosts*`-functions (`getHostsXHR, getHostsWS, getHostsFetch, getHostsHTML`) will 
   scan a range of ip addresses and perform host discovery. They will merge information 
@@ -164,10 +167,10 @@ summarized as follows:
   `ScanResult`-objects.
 
 - `getHostsLocalNetwork` automatically scans all hosts in the current local network. One of 
-  the `getHosts*`-functions can be provided to change the scan method.
+  the previously named `getHosts*`-functions can be provided to change the scan method.
 
 - `getPorts` can be used to scan various ports of a single host. One of the `createConnection*`-functions 
-  can be used to change the technology which will be used. Due to browser restrictions some 
+  can be used to change the technology which will be used for the scan. Due to browser restrictions some 
   ports cannot be scanned, those will be reported as "BLOCKED". 
 
 ### Supported Functionality
@@ -178,23 +181,24 @@ scanned).
 
 The fetch API is usually the best technology, as observed in the tests. It can scan 
 a large number of hosts in a relatively small amount of time and also supports something 
-called "opaque" requests. Those can be used to determine if a remote host understands the 
-HTTP protocol even if it does not send CORS headers. The only downside is that a very new 
-browser version is required and several browsers still do not support this new API.
+called "opaque" requests, which leak some useful additional information. Those can be used 
+to determine if a remote host understands the HTTP protocol even if it does not send CORS 
+headers. The only downside is that a very new browser version is required and several browsers 
+still do not support this new API, but will in the near future.
 
 XMLHttpRequests also have a good performance. Like "fetch"-requests the browser does not 
 impose very restricitve limitations on the amount of requests which can be dispatched 
 concurrently.
 
 Websockets perform significantly worse. Browsers have certain hard limits on the number of 
-simultaneously created Websockets. Firefox caps this number at 200. The number of sockets 
-which are active at the same time has to be controlled and limited by the library. This 
-increases the scan time.
+simultaneously created Websockets. Firefox for example caps this number at 200. This varies 
+accross browsers. The number of sockets which are active at the same time has to be controlled 
+and limited by the library. This increases the scan time fundamentally.
 
 The last variant of establishing a connection by creating a HTML element is the slowest. 
-Simultaneous requests are severly limited. Scans using this method can take a very long time.
-In addition no internal state changes can be accessed, thus less detailed information 
-gathered.
+The amount of simultaneous requests is severly limited by browser implementations. 
+Scans using this method can take a very long time. In addition no internal state changes 
+can be accessed, thus less detailed information gathered.
 
 #### Host scan
 Host discovery is based mainly on timing information. The time it takes between starting a 
@@ -217,8 +221,9 @@ Furthermore information of the performance timing API [19] [20] is used. This AP
 detailed timing information for website developers. For security reasons only start, end and 
 duration times will be exposed when the origin of a requested resource violates the 
 same-origin policy. During tests while developing NetScan.js it was observed, that as soon as 
-some data is received when establishing a connection to some remote address, a duration time 
-will be recorded. This allows us to determine if a remote host has some service running at 
+some data is received when establishing a connection to some remote address, the entries are 
+different from those where no data was received. By running some timing calculations and 
+comparisons this allows us to determine if a remote host has some service running at 
 a certain address or not.
 
 #### Port scan
@@ -229,17 +234,19 @@ where a HTML scan is applicable. Timing data is also less informative, because o
 are distinguishable: Either the port is closed, or open and responds with some data and 
 closes the TCP connection fast. In the other case the connection is kept open and hangs, 
 most of the time until the connection is closed by us or because of some implementation 
-dependent timeout. Further cases can only be differentiated when additional information is 
-available (fetch, performance timing API). The details can be found documented in the source 
-code.
+dependent timeout by the underlying networking layer of the browser. Further cases can only 
+be differentiated when additional information is available by using fetch-based requests, 
+and/or merging information of the performance timing API. The details of the different cases 
+can be found documented in the source code.
 
 ### Advantages over existing projects
 To the best of my knowledge all other existing libraries only use very little information. 
-Most of the time they only use timing data. None of them uses the modern fetch API which has 
+Most of the time they only use timing data combined with a single threshold, thus determining 
+the status based on a single comparison. None of them uses the modern fetch API which has 
 several advantages. NetScan.js can determine host and port states with a much higher accuracy 
 because it accesses and combines multiple sources of information. The timing model does not 
-only decide the status based on a single threshhold and can be easily configured individually 
-for each scan method.
+only decide the status based on a single threshhold, but tries to gather as much information 
+as possible and can be easily configured individually for each scan method.
 
 Limitations
 -----------
@@ -254,7 +261,7 @@ would be able to send UDP packets, this can not be used for our scanning purpose
 Further additional restrictions apply to different APIs and protocols, like 
 *Cross-Origin-Resource-Sharing (CORS)* [6] [7] [35], *Content Security Policies (CSP)* [36] and 
 blocking of specific ports for different protocols [30] [31] [32] [34]. CORS and CSP 
-can be evaded by relying on side channel information, metadata and correlate data from 
+can be evaded by relying on side channel information, metadata and correlating data from 
 different JavaScript APIs with request data. Even though we can not access response 
 information directly we can derive certain information about a response with that technique.
 Unfortunately the **port blocking cannot be bypassed**. The only possibility which exists, is 
@@ -271,18 +278,19 @@ Further tests
 -------------
 This section describes experiments which were conducted during the development of NetScan.js, 
 but did not yield the expected or useful results. Some of the tests are still included in 
-the "test" subfolder.
+the "test" subfolder, for continueing the experiments.
 
 It was tried to extract connection information and timing data from WebRTC in order to 
 use it for network scans. Although there exist many points where internal state data can be 
 accessed it did not prove as useful. A meaningful conclusion cannot be drawn, as there are 
 not much differences in the internal processing between existing and non-existing hosts. 
-In a second attempt various manipulations on the SDP which is used in WebRTC [16] were 
-tested. The goal was to establish arbitrary connections to any ip address chosen by us. 
-I was able to achieve to send packets to addresses chosen manually, but I did not manage 
-to get manually crafted data through, as no ICE connection was established. This could 
-need further exploration, because WebRTC and the internal mechanisms are rather complex and 
-include a lot of different specifications and RFCs. Some useful information on SDP can be 
+In a second attempt various manipulations in the session description protocol (SDP) which 
+is used in WebRTC [16] were tested. The goal was to establish arbitrary connections to any 
+ip address chosen by us and collect data directly, through errors or timing side channels 
+subsequently. I was able to achieve to send packets to addresses chosen manually, but I did 
+not manage to get manually crafted data through, as no ICE connection was established. This 
+could need further exploration, because WebRTC and the internal mechanisms are rather complex 
+and include a lot of different specifications and RFCs. Some useful information on SDP can be 
 found at [12] [13] [13] [14] [15] [17].
 
 Another experiment was dedicated to reading cross-origin content. Based on previous research 
@@ -297,7 +305,7 @@ better use of the browser cache. Service Workers allow precise control over whic
 are cached and which resources will get served when a request is made. It is also possible 
 to intercept requests and manipulate them on the fly. So I tried if any advantage can be 
 gained when fiddling around with requests and responses. After investigating the browser 
-source code I learned that data which is caches by Service Workers is transformed multiple 
+source code I learned that data which is cached by Service Workers is transformed multiple 
 times based on their attributes. The only problem is that most properties of the JavaScript 
 Request/Response-objects are read only. Although they can be overwritten by some JavaScript 
 hacks, the changes could not be propagated to the browsers internal objects. Most likely this 
