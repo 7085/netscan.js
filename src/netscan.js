@@ -257,7 +257,9 @@ var NetScan = (function () {
 	
 	/**
 	 * Merges and updates an array of scan results with data 
-	 * obtained by the performance timing API.
+	 * obtained by the performance timing API. This API is still rapidly 
+	 * changing, while developing FF behaviour changed and new entries are 
+	 * getting added, like: https://w3c.github.io/resource-timing/#widl-PerformanceResourceTiming-nextHopProtocol
 	 * @param Array results An array of entries of type ScanResult obtained by 
 	 * one of the scan functions.
 	 * @param String statusNew The new status that will be set when data can be 
@@ -273,7 +275,24 @@ var NetScan = (function () {
 		}
 		
 		var connections = performance.getEntriesByType("resource").filter((entry) => {
-			return entry.duration !== 0;
+			/* this is no longer valid... */
+			//return entry.duration !== 0;
+			
+			/* From the spec: https://w3c.github.io/resource-timing/
+				On getting, the fetchStart attribute MUST return as follows:
+					- The time immediately before the user agent starts to fetch the final resource 
+					  in the redirection, if there are HTTP redirects or equivalent.
+					- The time immediately before the user agent starts to fetch the resource otherwise.
+			
+				On getting, the responseEnd attribute MUST return as follows:
+					- The time immediately after the user agent receives the last byte 
+					  of the response or immediately before the transport connection is closed, 
+					  whichever comes first. The resource here can be received either from relevant 
+					  application caches, or from local resources or from the server if the last 
+					  non-redirected fetch of the resource passes the timing allow check algorithm.
+					- zero, otherwise. 
+			*/
+			return entry.fetchStart !== entry.responseEnd;
 		});
 		
 		for(var i = 0; i < connections.length; i++){
@@ -1005,16 +1024,16 @@ var NetScan = (function () {
 		 * 
 		 * # FF (Iceweasel 38.8.0 Debian 8.5 (64-bit)):
 		 * [-] port no connection: 		returns fast
-		 * [+] port closed no resp: 	returns fast, performance timing entry with duration != 0 
-		 * [+] port closed w/ resp: 	returns fast, performance timing entry with duration != 0 
+		 * [+] port closed no resp: 	returns fast, performance timing entry check possible 
+		 * [+] port closed w/ resp: 	returns fast, performance timing entry check possible
 		 * 								(might be also determined with newer fetch, needs to be checked with 
 		 * 								newer version, >= 39, currently testing with 38.8) 
 		 * [+] port opened no resp:		hangs until timeout, perf entry after builtin timeout (?) which is 
 		 * 								very large: > 80000
 		 * [+] port opened w/ resp: 	returns fast, BUT because we received some data we get a performance
-		 * 								timing entry with duration != 0 
-		 * [+] port instaclose no msg:	returns very fast, perf timing entry with duration != 0 
-		 * [+] port instaclose w/ msg:	returns very fast, perf timing entry with duration != 0 
+		 * 								timing entry check possible 
+		 * [+] port instaclose no msg:	returns very fast, perf timing entry check possible
+		 * [+] port instaclose w/ msg:	returns very fast, perf timing entry check possible 
 		 **/
 		function onResult(address, timing, info){
 			var status = "???";
