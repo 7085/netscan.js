@@ -27,7 +27,16 @@
 				}
 			}
 
-			// TODO insert tests
+			
+			NetScan.Timer.start("a");
+			NetScan.Scan.getPorts("127.0.0.1", "9000-9010,20-22,443", (result) =>{
+				NetScan.Timer.stop("a");
+				tabinsert(result);
+				document.getElementById("time").innerHTML = NetScan.Timer.duration("a");
+			});
+			
+			
+
 
 		</script>
 

@@ -355,7 +355,6 @@ var NetScan = (function () {
 	Scan.fetchTimeout = 20000;
 	Scan.htmlTimeout = 20000;
 	Scan.portScanTimeout = 5000;
-	// TODO separate timing bounds for ws and xhr
 
 	/**
 	 * Result messages used internally.
@@ -598,7 +597,17 @@ var NetScan = (function () {
 				ws.close(4999, Scan.resultMsgTimeout);
 			}, connectionTimeout);
 
-			// TODO: handle blocking of http authentication (in FF)
+			/**
+			 * XXX: There is no reliable way of disabling/avoiding a popup in FF 
+			 * when a HTTP authorization is required.
+			 * The WebSocket RFC includes the possibility to define custom headers,
+			 * but the browser APIs don't :(.
+			 * Using a user:pass@hostname.tld scheme would work, but only if the 
+			 * user-password combination is correct. Otherwise it will retrigger the 
+			 * popup in a loop...
+			 * 
+			 * So this case will result in a timeout and handled correctly this way.
+			 */
 		} 
 		catch(err) {
 			handleSingleResult(address, 0, Scan.resultMsgError + " ("+ err.toString() +")");
@@ -976,8 +985,8 @@ var NetScan = (function () {
 		 * -------------------------------
 		 * legend:
 		 * [+] = can be detected
-		 * [-] = cannot be distinguished 
-		 * [?] = needs further investigation
+		 * [-] = cannot be distinguished (when there are mutiple indistinguishable cases)
+		 * [?] = needs further investigation / undetectable because of browser bug or unsupported API
 		 * 
 		 * # Chromium (Version 51.0.2704.79 Built on 8.4, running on Debian 8.5 (64-bit)):
 		 * [-] port no connection: 		returns fast (net::ERR_CONNECTION_REFUSED in console)
@@ -1018,11 +1027,15 @@ var NetScan = (function () {
 			/* timing */
 			else if(timing >= Scan.portScanTimeout){
 				status = "open";
-			} // TODO timing add info about closed when timing is low?
+			} 
 			/* response */
 			else if((info.indexOf(Scan.resultMsgData) !== -1)
 			|| (info.indexOf(Scan.resultMsgConnected) !== -1)){
 				status = "open";
+			}
+			/* otherwise, no info */
+			else {
+				status = "closed";
 			}
 			
 			results.push(new ScanResult(
