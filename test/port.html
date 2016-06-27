@@ -14,6 +14,14 @@
 				list-style: none;
 				font-weight: bold;
 			}
+			
+			td {
+				padding: 0 5px 0 5px;
+			}
+			
+			td:nth-child(3n) {
+				text-align: right;
+			}
 		</style>
 	</head>
 	<body>
@@ -35,13 +43,10 @@
 				document.getElementById("time").innerHTML = NetScan.Timer.duration("a");
 			});
 			
-			
-
-
 		</script>
 
 		<h1>html stub for testing</h1>
-		<h3 id="time">processing...</h3>
+		<h3>duration: <span id="time">(processing...)</span> ms</h3>
 		<table id="tab">
 			<tr>
 				<th>ip/port</th>

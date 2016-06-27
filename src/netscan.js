@@ -342,11 +342,11 @@ var NetScan = (function () {
 	}
 	
 	ScanResult.prototype.toString = function(){
-		return "ScanResult for '"+ this.address +"', duration: "+ this.duration +", status: "+ this.status +", info: "+ this.info;  
+		return "ScanResult for '"+ this.address +"', duration: "+ this.duration.toFixed(2) +", status: "+ this.status +", info: "+ this.info;  
 	};
 	
 	ScanResult.prototype.toTableString = function(){
-		return "<tr><td>"+ this.address +"</td><td>"+ this.status +"</td><td>"+ this.duration +"</td><td>"+ this.info +"</td></tr>";
+		return "<tr><td>"+ this.address +"</td><td>"+ this.status +"</td><td>"+ this.duration.toFixed(2) +"</td><td>"+ this.info +"</td></tr>";
 	};
 	
 	////////////////////////////////////////////////////////////////////////////////

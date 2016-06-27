@@ -14,6 +14,14 @@
 				list-style: none;
 				font-weight: bold;
 			}
+			
+			td {
+				padding: 0 5px 0 5px;
+			}
+			
+			td:nth-child(3n) {
+				text-align: right;
+			}
 		</style>
 	</head>
 	<body>
@@ -23,19 +31,22 @@
 				var table = document.getElementById("tab");
 			
 				for(var i = 0; i < r.length; i++){
-					tab.insertAdjacentHTML("beforeend", 
-						"<tr><td>"+ r[i].address +"</td><td>"+ r[i].status +"</td><td>"+ r[i].duration +"</td><td>"+ r[i].info +"</td></tr>");
+					tab.insertAdjacentHTML("beforeend", r[i].toTableString());
 				}
 			}
-
-
-			NetScan.Scan.getHostsLocalNetwork(tabinsert, NetScan.Scan.getHostsFetch);
-
+			
+			
+			NetScan.Timer.start("a");
+			NetScan.Scan.getHostsLocalNetwork((result) =>{
+				NetScan.Timer.stop("a");
+				tabinsert(result);
+				document.getElementById("time").innerHTML = NetScan.Timer.duration("a");
+			}, NetScan.Scan.getHostsFetch);
 
 		</script>
 
 		<h1>html stub for testing</h1>
-		<h3 id="time">processing...</h3>
+		<h3>duration: <span id="time">(processing...)</span> ms</h3>
 		<table id="tab">
 			<tr>
 				<th>ip/port</th>
