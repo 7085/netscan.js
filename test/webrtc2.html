@@ -1,0 +1,352 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>test</title>
+	</head>
+	<body>
+	<script src="../src/netscan.js"></script>
+	<script>
+	var RTCPeerConnection = window.RTCPeerConnection 
+		|| window.mozRTCPeerConnection 
+		|| window.webkitRTCPeerConnection 
+		|| window.msRTCPeerConnection;
+	var RTCSessionDescription = window.RTCSessionDescription 
+		|| window.mozRTCSessionDescription 
+		|| window.webkitRTCSessionDescription 
+		|| window.msRTCSessionDescription;
+	navigator.getUserMedia = navigator.getUserMedia 
+		|| navigator.mozGetUserMedia 
+		|| navigator.webkitGetUserMedia 
+		|| navigator.msGetUserMedia;
+	var RTCIceCandidate = window.RTCIceCandidate 
+		|| window.mozRTCIceCandidate 
+		|| window.webkitRTCIceCandidate 
+		|| window.msRTCIceCandidate;
+		
+	/**
+	 * SDP candidate line structure (a=candidate:)
+	 * 1 1 UDP 1686110207  80.110.26.244 50774 typ srflx raddr 192.168.2.108 rport 50774
+	 * 2 1 UDP 25108223 	237.30.30.30 58779 typ relay raddr   47.61.61.61 rport 54761
+	 * 0 			1 					UDP 				2122252543 		192.168.2.108 		52229 		typ host
+	 * candidate | rtp (1)/rtcp (2) | protocol (udp/tcp) | priority 	| ip				| port		| type (host/srflx/relay)
+	 **/
+	var Util = NetScan.Util;
+	/* rewrite here so we dont break anything in the lib */
+	Util.extractConnectionInfo = function(candidate){
+		var host = /(UDP|TCP) \d+ ((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate);
+		if(host !== null && host.length === 4){
+			return {type: "host", ip: host[2], port: host[3], public_ip: null, public_port: null, protocol: host[1]};
+		}
+
+		var srflx = /(UDP|TCP) \d+ ((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ srflx raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
+		if(srflx !== null && srflx.length === 6){
+			return {type: "srflx", ip: srflx[4], port: srflx[5], public_ip: srflx[2], public_port: srflx[3], protocol: srflx[1]};
+		}
+
+		var relay = /(UDP|TCP) \d+ ((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ relay raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
+		if(relay !== null && relay.length === 6){
+			return {type: "relay", ip: relay[4], port: relay[5], public_ip: relay[2], public_port: relay[3], protocol: relay[1]};
+		}
+
+		return null;
+	};
+
+	Util.replaceConnectionInfo = function(candidate, replacement){
+		var m = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate)
+			|| /((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
+
+		if(m !== null){
+			var t = candidate.replace(m[1], replacement.ip);
+			t = t.replace(m[2], replacement.port);
+			t = t.replace(/(UDP|TCP)/, "TCP");
+			//t = t.replace("typ host", "typ host tcptype active")
+			return t;
+		}
+
+		return candidate;
+	};
+		
+	/* globals / instance vars, might be exposed for debugging */
+	var connLocal,
+		connRemote,
+		serverConfig,
+		peerConfig,
+		recvChan,
+		sendChan;
+
+	function iceCandidateSuccess(){
+		console.log("Successfully added ice candidate");
+	}
+
+	function iceCandidateError(err){
+		console.log("Failed adding ice candidate", err);
+	}
+
+	function signalingStateChange(evt){
+		console.log("signaling state: ", evt.target.signalingState);
+	}
+
+	function iceConnectionStateChange(evt){
+		console.log("ice connection state: ", evt.target.iceConnectionState);
+	}
+
+	function sessionDescriptionSuccess(){
+		console.log("Successfully set session description.");
+	}
+
+	function sessionDescriptionError(err){
+		console.log("Failed to set session description: " + err.toString());
+	}
+
+	function DBG(e){
+		//console.log(JSON.stringify(e));
+		console.log(e);
+	};
+
+
+	function handleRemoteCandidate(evt){
+		if(evt.candidate){
+			var candidate = evt.candidate;
+			console.log("got candidate remote: ", candidate.candidate);
+			console.log(candidate);
+
+			// var host = Util.extractConnectionInfo(candidate.candidate);
+			// if(host !== null){
+			// 	console.log("trying to manipulate ip", host);
+			// 	host.ip = "192.168.2.252";
+			// 	host.port = "80";
+			// 	candidate.candidate = Util.replaceConnectionInfo(candidate.candidate, host);
+			// 	console.log("ip should now be different", candidate);
+			// }
+			/* have to add candidate to local conn */
+			connLocal.addIceCandidate(candidate)
+				.then(iceCandidateSuccess, iceCandidateError)
+				.then(() => console.log("sdp updated (local): ", connLocal.remoteDescription.sdp));
+		}
+		else { /* at this state (evt.candidate == null) we are finished */
+			// TODO get end time
+			console.log("finished", JSON.stringify(evt));
+		}
+	}
+
+	function handleLocalCandidate(evt){
+		if(evt.candidate){
+			var candidate = evt.candidate;
+			console.log("got candidate local: ", candidate.candidate);
+			console.log(candidate);
+
+			// var host = Util.extractConnectionInfo(candidate.candidate);
+			// if(host !== null){
+			// 	console.log("trying to manipulate ip", host);
+			// 	host.ip = "192.168.2.35";
+			// 	host.port = "80";
+			// 	candidate.candidate = Util.replaceConnectionInfo(candidate.candidate, host);
+			// 	console.log("ip should now be different", candidate);
+			// }
+
+			connRemote.addIceCandidate(candidate)
+				.then(iceCandidateSuccess, iceCandidateError)
+				.then(() => console.log("sdp updated (remote): ", connRemote.remoteDescription.sdp));
+		}
+		else { /* at this state (evt.candidate == null) we are finished */
+			// TODO get end time
+			console.log("finished", JSON.stringify(evt));
+		}
+	}
+
+
+	var test = function (){
+		console.log("starting test");
+
+		serverConfig = {
+			iceServers: [
+				{urls: ["stun:stun.l.google.com:19302"]} // "stun:stun.l.google.com:19302"
+			], 
+			iceTransportPolicy: "all",
+			bundlePolicy: "balanced",
+			rtcpMuxPolicy: "negotiate" // default: "require"
+		};
+		//serverConfig = null; // XXX
+		peerConfig = null;
+		
+		connLocal = new RTCPeerConnection(serverConfig, peerConfig);
+
+		sendChan = connLocal.createDataChannel("dataChannel", null);
+		sendChan.onopen = function (event) {
+			console.log("sendChan open");
+			sendChan.send("test send msg");
+		};
+		sendChan.onclose = function (event) {
+			console.log("sendChan close");
+		};
+		sendChan.onmessage = function (event) {
+			console.log("sendChan received: " + event.data);
+		};
+		sendChan.onerror = function (err) {
+			console.log("sendChan error: ", err);
+		};
+
+		connLocal.onicecandidate = handleLocalCandidate;
+
+		connLocal.oniceconnectionstatechange = iceConnectionStateChange;
+		connLocal.onsignalingstatechange = signalingStateChange;
+		connLocal.onconnectionstatechange = DBG;
+		connLocal.onicecandidateerror = DBG;
+		connLocal.onicegatheringstatechange = DBG;
+
+
+		connRemote = new RTCPeerConnection(serverConfig, peerConfig);
+		connRemote.onicecandidate = handleRemoteCandidate;
+
+		connRemote.oniceconnectionstatechange = iceConnectionStateChange;
+		connRemote.onsignalingstatechange = signalingStateChange;
+		connRemote.onconnectionstatechange = DBG;
+		connRemote.onicecandidateerror = DBG;
+		connRemote.onicegatheringstatechange = DBG;
+
+		connRemote.ondatachannel = function(event){
+			console.log("Received data channel");
+			recvChan = event.channel;
+			recvChan.onopen = function (event) {
+				console.log("recvChan open");
+			};
+			recvChan.onclose = function (event) {
+				console.log("recvChan close");
+			};
+			recvChan.onmessage = function (event) {
+				console.log("recvChan received: " + event.data);
+			};
+			recvChan.onerror = function (err) {
+				console.log("recvChan error: ", err);
+			};
+		};
+		
+
+		connLocal.createOffer()
+			.then(function(offerDesc){
+				// TODO measure time
+				console.log("creating offer:", offerDesc.sdp);
+
+				console.log("setting descriptions...");
+				connLocal.setLocalDescription(offerDesc)
+					.then(sessionDescriptionSuccess, sessionDescriptionError)
+					.then(() => connRemote.setRemoteDescription(offerDesc))
+					.then(sessionDescriptionSuccess, sessionDescriptionError)
+					.then(() => console.log("descriptions are now: ", connLocal.localDescription.sdp, connRemote.remoteDescription.sdp))
+
+					.then(() => connRemote.createAnswer())
+					.then(function(answerDesc){
+						// TODO measure time
+						console.log("creating answer:", answerDesc.sdp);
+
+						console.log("setting descriptions...");
+						connRemote.setLocalDescription(answerDesc)
+							.then(sessionDescriptionSuccess, sessionDescriptionError)
+							.then(() => connLocal.setRemoteDescription(answerDesc))
+							.then(sessionDescriptionSuccess, sessionDescriptionError)
+							.then(() => console.log("descriptions are now: ", connLocal.remoteDescription.sdp, connRemote.localDescription.sdp));
+			
+					},
+					function(error){
+						console.log("Could not create answer: ", error);
+					});
+
+			},
+			function(error){
+				console.log("Could not create offer: ", error);
+			});
+
+
+
+		//connLocal.addIceCandidate(new RTCIceCandidate({candidate:"candidate:0 1 UDP 2122252543 10.0.0.138 57192 typ host", sdpMLineIndex:0, sdpMid:""}), DBG, DBG);
+
+	}
+
+function connect(cbReturn){
+		var ips = [];
+
+		var serverConfig = {
+			iceServers: [
+				{urls: ["stun:stun.l.google.com:19302"]}
+			]
+		};
+
+		var conn = new RTCPeerConnection(serverConfig, null);
+		var sendChan = conn.createDataChannel("netscan", null);
+
+		conn.onicecandidate = function(evt){
+			if(evt.candidate !== null){
+				var candidate = evt.candidate;
+				console.log("Got candidate:", candidate.candidate);
+
+				
+			}
+			/** 
+			 * At this state (evt.candidate == null) we are finished, see:
+			 * https://developer.mozilla.org/de/docs/Web/API/RTCPeerConnection/onicecandidate 
+			 **/
+			else { 
+				// sendChan.close();
+				// conn.close();
+				// sendChan = null;
+				// conn = null;
+				// cbReturn(ips);
+				var sdp = ["v=0",
+"o=mozilla...THIS_IS_SDPARTA-45.2.0 8174679023802593420 0 IN IP4 0.0.0.0",
+"s=-",
+"t=0 0",
+"a=sendrecv",
+"a=fingerprint:sha-256 B4:95:39:8C:BA:F2:77:A3:89:C2:A8:71:DB:75:EF:8A:18:5B:74:BD:5C:95:E2:33:4B:8F:CD:A8:65:D0:6B:B4",
+"a=ice-options:trickle",
+"a=msid-semantic:WMS *",
+"m=application 9 DTLS/SCTP 5000",
+"c=IN IP4 0.0.0.0",
+"a=candidate:0 1 UDP 2122252543 192.168.2.132 9999 typ host",
+"a=sendrecv",
+"a=ice-pwd:f62fa29a082cbdddc3d58a55d8c2e69c",
+"a=ice-ufrag:ca54c76d",
+"a=mid:sdparta_0",
+"a=sctpmap:5000 webrtc-datachannel 256",
+"a=setup:active", // actpass or active
+"a=ssrc:2024207363 cname:{76f57e40-0e79-4134-a5c4-017f4a50c6d4}",
+];
+				conn.setRemoteDescription(new RTCSessionDescription({type: "answer", sdp: sdp.join("\r\n")}))
+					.then(()=>{
+						sessionDescriptionSuccess();
+						console.log("local desc: ", conn.localDescription.sdp);
+						console.log("remote desc: ", conn.remoteDescription.sdp);
+					}, sessionDescriptionError);
+			}
+		};
+
+		try {
+			conn.createOffer()
+				.then(function(offerDesc){
+					conn.setLocalDescription(offerDesc);
+				},
+				// eslint-disable-next-line no-unused-vars
+				function(error){console.log(error);});
+		} 
+		catch(/* TypeError */ error){
+
+			/**
+			 * Fallback for older version of createOffer which requires 
+			 * two callbacks instead of the newer Promise which will be returned 
+			 **/
+			conn.createOffer(
+				function(offerDesc){
+					conn.setLocalDescription(offerDesc);
+				},
+				// eslint-disable-next-line no-unused-vars
+				function(error){console.log(error);});
+		}
+	};
+		
+		//test();
+		connect();
+	</script>
+
+		<h1>html stub for testing</h1>
+	</body>
+</html> 
