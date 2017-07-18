@@ -1,5 +1,5 @@
-NetScan.js - Browser based Network Scanner
-==========================================
+netscan.js - Network Scanner for Browser Environments
+=====================================================
 
 
 Introduction
