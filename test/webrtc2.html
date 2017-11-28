@@ -278,7 +278,7 @@ function connect(cbReturn){
 		conn.onicecandidate = function(evt){
 			if(evt.candidate !== null){
 				var candidate = evt.candidate;
-				console.log("Got candidate:", candidate.candidate);
+				console.log("onicecandidate:", candidate.candidate);
 
 				
 			}
@@ -292,31 +292,56 @@ function connect(cbReturn){
 				// sendChan = null;
 				// conn = null;
 				// cbReturn(ips);
-				var sdp = ["v=0",
+				
+				// mozilla sdp
+				var sdp1 = ["v=0",
 "o=mozilla...THIS_IS_SDPARTA-45.2.0 8174679023802593420 0 IN IP4 0.0.0.0",
 "s=-",
 "t=0 0",
-"a=sendrecv",
+//"a=sendrecv",
 "a=fingerprint:sha-256 B4:95:39:8C:BA:F2:77:A3:89:C2:A8:71:DB:75:EF:8A:18:5B:74:BD:5C:95:E2:33:4B:8F:CD:A8:65:D0:6B:B4",
 "a=ice-options:trickle",
 "a=msid-semantic:WMS *",
-"m=application 9 DTLS/SCTP 5000",
-"c=IN IP4 0.0.0.0",
-"a=candidate:0 1 UDP 2122252543 192.168.2.132 9999 typ host",
-"a=sendrecv",
+"m=application 41562 DTLS/SCTP 5000",
+"c=IN IP4 128.130.248.136",
+"a=candidate:0 1 UDP 2122252543 128.130.248.136 41562 typ host",
+//"a=sendrecv",
 "a=ice-pwd:f62fa29a082cbdddc3d58a55d8c2e69c",
 "a=ice-ufrag:ca54c76d",
 "a=mid:sdparta_0",
 "a=sctpmap:5000 webrtc-datachannel 256",
-"a=setup:active", // actpass or active
-"a=ssrc:2024207363 cname:{76f57e40-0e79-4134-a5c4-017f4a50c6d4}",
+"a=setup:active" // actpass or active
+//"a=ssrc:2024207363 cname:{76f57e40-0e79-4134-a5c4-017f4a50c6d4}",
 ];
-				conn.setRemoteDescription(new RTCSessionDescription({type: "answer", sdp: sdp.join("\r\n")}))
+
+				// chrome sdp
+				var sdp2 = ["v=0",
+"o=- 1135629542607257546 2 IN IP4 127.0.0.1",
+"s=-",
+"t=0 0",
+"a=msid-semantic: WMS",
+"m=application 9 DTLS/SCTP 5000",
+"c=IN IP4 0.0.0.0",
+"a=ice-ufrag:HZ2dkduuew89l0Wt",
+"a=ice-pwd:RMBIaGiWgEqZT/83+HBXurgT",
+"a=fingerprint:sha-256 9C:FA:16:8A:2F:57:11:96:F9:3F:AE:5F:1C:9C:E4:8F:44:95:87:23:D4:45:2D:69:BB:47:D9:79:62:94:1C:1C",
+"a=setup:active",
+"a=mid:data",
+"a=sctpmap:5000 webrtc-datachannel 1024"
+];
+
+				conn.setRemoteDescription(new RTCSessionDescription({type: "answer", sdp: sdp2.join("\r\n") + "\r\n"}))
 					.then(()=>{
 						sessionDescriptionSuccess();
-						console.log("local desc: ", conn.localDescription.sdp);
-						console.log("remote desc: ", conn.remoteDescription.sdp);
-					}, sessionDescriptionError);
+						console.log("local desc: \n", conn.localDescription.sdp);
+						console.log("remote desc: \n", conn.remoteDescription.sdp);
+					}, sessionDescriptionError)
+					
+					.then(()=>{
+						conn.addIceCandidate(new RTCIceCandidate({candidate:"candidate:3244687162 1 udp 2113937151 128.130.248.136 51477 typ host generation 0 ufrag rYG8SH5n9n42uLbc", sdpMLineIndex:0, sdpMid:"data"}))
+							.then(iceCandidateSuccess, iceCandidateError)
+							.then(() => console.log("sdp updated (remote): ", conn.remoteDescription.sdp));
+					});
 			}
 		};
 
@@ -324,6 +349,7 @@ function connect(cbReturn){
 			conn.createOffer()
 				.then(function(offerDesc){
 					conn.setLocalDescription(offerDesc);
+					console.log("local desc: \n", conn.localDescription.sdp);
 				},
 				// eslint-disable-next-line no-unused-vars
 				function(error){console.log(error);});
@@ -337,6 +363,7 @@ function connect(cbReturn){
 			conn.createOffer(
 				function(offerDesc){
 					conn.setLocalDescription(offerDesc);
+					console.log("local desc: \n", conn.localDescription.sdp);
 				},
 				// eslint-disable-next-line no-unused-vars
 				function(error){console.log(error);});
