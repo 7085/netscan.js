@@ -1,0 +1,47 @@
+{
+	"name": "netscan.js",
+	"version": "1.0.0",
+	"description": "",
+	"main": "src/netscan.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "Tobias Fink",
+    "license": "UNLICENSED",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/7085/netscan.js.git"
+    },
+	"eslintConfig": {
+		"env": {
+			"browser": true,
+			"es6": true
+		},
+		"extends": "eslint:recommended",
+		"rules": {
+			"indent": [
+				"error",
+				4,
+				{
+					"SwitchCase": 1
+				}
+			],
+			"linebreak-style": [
+				"error",
+				"unix"
+			],
+			"quotes": [
+				"error",
+				"double",
+				{
+					"allowTemplateLiterals": true
+				}
+			],
+			"semi": [
+				"error",
+				"always"
+			],
+			"no-console": "off"
+		}
+	}
+}
