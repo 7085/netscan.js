@@ -4,19 +4,20 @@
 	"description": "",
 	"main": "src/netscan.js",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"build": "webpack"
 	},
 	"author": "Tobias Fink",
-    "license": "MIT",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/7085/netscan.js.git"
-    },
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/7085/netscan.js.git"
+	},
 	"eslintConfig": {
 		"parserOptions": {
 			"ecmaVersion": 8
 		},
 		"env": {
+			"node": true,
 			"browser": true
 		},
 		"extends": "eslint:recommended",
@@ -45,5 +46,8 @@
 			],
 			"no-console": "off"
 		}
+	},
+	"devDependencies": {
+		"webpack": "^3.11.0"
 	}
 }
