@@ -7,15 +7,17 @@
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"author": "Tobias Fink",
-    "license": "UNLICENSED",
+    "license": "MIT",
     "repository": {
         "type": "git",
         "url": "https://github.com/7085/netscan.js.git"
     },
 	"eslintConfig": {
+		"parserOptions": {
+			"ecmaVersion": 8
+		},
 		"env": {
-			"browser": true,
-			"es6": true
+			"browser": true
 		},
 		"extends": "eslint:recommended",
 		"rules": {
