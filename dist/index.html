@@ -9,6 +9,8 @@
 	</head>
 	<body>
 		<script>
+			const {Scan, Timer} = NetScan;
+
 			function tabinsert(r) {
 				var table = document.getElementById("tab");
 			
@@ -18,12 +20,12 @@
 			}
 			
 			
-			NetScan.Timer.start("a");
-			NetScan.Scan.getHostsLocalNetwork((result) =>{
-				NetScan.Timer.stop("a");
+			Timer.start("a");
+			Scan.getHostsLocalNetwork((result) =>{
+				Timer.stop("a");
 				tabinsert(result);
-				document.getElementById("time").innerHTML = NetScan.Timer.duration("a");
-			}, NetScan.Scan.getHostsFetch);
+				document.getElementById("time").innerHTML = Timer.duration("a");
+			}, Scan.getHostsFetch);
 
 		</script>
 

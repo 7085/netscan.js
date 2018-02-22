@@ -3,7 +3,6 @@
 	<head>
 		<meta charset="utf-8">
 		<title>test</title>
-		<!-- <script src="adapter.js"></script> -->
 		<style>
 			ul {
 				display: inline-block;
@@ -25,7 +24,7 @@
 		</style>
 	</head>
 	<body>
-		<script src="../src/netscan.js"></script>
+		<script src="../../dist/netscan.js"></script>
 		<script>
 			function tabinsert(r) {
 				var table = document.getElementById("tab");
@@ -34,15 +33,15 @@
 					tab.insertAdjacentHTML("beforeend", r[i].toTableString());
 				}
 			}
-
+			
 			
 			NetScan.Timer.start("a");
-			NetScan.Scan.getPorts("127.0.0.1", "9000-9010,20-22,443", (result) =>{
+			NetScan.Scan.getHostsLocalNetwork((result) =>{
 				NetScan.Timer.stop("a");
 				tabinsert(result);
 				document.getElementById("time").innerHTML = NetScan.Timer.duration("a");
-			});
-			
+			}, NetScan.Scan.getHostsFetch);
+
 		</script>
 
 		<h1>html stub for testing</h1>

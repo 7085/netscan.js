@@ -1,134 +1,3 @@
-var NetScan =
-/******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
-/******/
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId]) {
-/******/ 			return installedModules[moduleId].exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			i: moduleId,
-/******/ 			l: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
-/******/ 		// Flag the module as loaded
-/******/ 		module.l = true;
-/******/
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/
-/******/
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
-/******/
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
-/******/
-/******/ 	// define getter function for harmony exports
-/******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, {
-/******/ 				configurable: false,
-/******/ 				enumerable: true,
-/******/ 				get: getter
-/******/ 			});
-/******/ 		}
-/******/ 	};
-/******/
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__webpack_require__.n = function(module) {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			function getDefault() { return module['default']; } :
-/******/ 			function getModuleExports() { return module; };
-/******/ 		__webpack_require__.d(getter, 'a', getter);
-/******/ 		return getter;
-/******/ 	};
-/******/
-/******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-/******/
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
-/******/
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 1);
-/******/ })
-/************************************************************************/
-/******/ ([
-/* 0 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-/**
- * Timer contains utility functions for time measurement.
- */
-class Timer {
-
-	static start(name) {
-		window.performance.mark("start_" + name);
-	}
-
-	static stop(name) {
-		window.performance.mark("stop_" + name);
-	}
-
-	static duration(name) {
-		window.performance.measure("dur_" + name, "start_" + name, "stop_" + name);
-		return performance.getEntriesByName("dur_" + name, "measure")[0].duration; // in ms
-	}
-
-	static durationInSec(name) {
-		return (this.duration(name) / 1000).toFixed(3);
-	}
-
-	static durationDiff(startName, stopName) {
-		window.performance.measure("dur_" + startName + stopName, "start_" + startName, "stop_" + stopName);
-		return performance.getEntriesByName("dur_" + startName + stopName, "measure")[0].duration; // in ms
-	}
-
-	static durationDiffInSec(startName, stopName) {
-		return (this.durationDiff(startName, stopName) / 1000).toFixed(3);
-	}
-
-	static getTimestamp() {
-		return window.performance.now(); // in ms, micro-seconds fraction
-	}
-
-}
-/* harmony export (immutable) */ __webpack_exports__["a"] = Timer;
-
-
-/***/ }),
-/* 1 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_NetScan__ = __webpack_require__(2);
-/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "Scan", function() { return __WEBPACK_IMPORTED_MODULE_0_NetScan__["a"]; });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_Timer__ = __webpack_require__(0);
-/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "Timer", function() { return __WEBPACK_IMPORTED_MODULE_1_Timer__["a"]; });
-
-
-
-/***/ }),
-/* 2 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_Timer__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_Util__ = __webpack_require__(3);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_ScanResult__ = __webpack_require__(4);
 /******************************************************************************
  *                               - NetScan.js -                                
  * A JavaScript library for client side host discovery and port scanning.
@@ -136,9 +5,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
  * Author: Tobias Fink (e1026737@student.tuwien.ac.at)
  *****************************************************************************/
 
-
-
-
+import Timer from "Timer";
+import Util from "Util";
+import ScanResult from "ScanResult";
 
 
 const RTCPeerConnection = window.RTCPeerConnection
@@ -194,15 +63,15 @@ const resultMsgConnected = "CONNECTION OPENED";
 const resultMsgDisconnected = "CONNECTION CLOSED";
 const resultMsgPerfTiming = "PERF-TIMING CONNECTION RECORD";
 
-class NetScan {
+export default class NetScan {
 	/**
 	 * Retrieves all private and public ip addresses
 	 * and ports assigned to the current host.
-	 * @param {Function} cbReturn Gets a list of ip and port combinations which were
-	 * 	found in the gathering process.
+	 * @param {Function} cbReturn Gets a list of ip and port combinations 
+	 * which were found in the gathering process.
 	 */
 	static getHostIps(cbReturn) {
-		__WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].start("getHostIps");
+		Timer.start("getHostIps");
 		var ips = [];
 
 		var serverConfig = {
@@ -219,7 +88,7 @@ class NetScan {
 				var candidate = evt.candidate;
 				//console.log("Got candidate:", candidate.candidate);
 
-				var host = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].extractConnectionInfo(candidate.candidate);
+				var host = Util.extractConnectionInfo(candidate.candidate);
 				if (host !== null) {
 					ips.push(host);
 				}
@@ -229,7 +98,7 @@ class NetScan {
 			 * https://developer.mozilla.org/de/docs/Web/API/RTCPeerConnection/onicecandidate 
 			 **/
 			else {
-				__WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].stop("getHostIps");
+				Timer.stop("getHostIps");
 				sendChan.close();
 				conn.close();
 				sendChan = null;
@@ -288,20 +157,20 @@ class NetScan {
 			x.onreadystatechange = function () {
 				switch (x.readyState) {
 					case 2: // HEADERS_RECEIVED
-						diff = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - lastChangeTime;
-						lastChangeTime = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp();
+						diff = Timer.getTimestamp() - lastChangeTime;
+						lastChangeTime = Timer.getTimestamp();
 						info += diff + "::";
 						break;
 
 					case 3: // LOADING
-						diff = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - lastChangeTime;
-						lastChangeTime = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp();
+						diff = Timer.getTimestamp() - lastChangeTime;
+						lastChangeTime = Timer.getTimestamp();
 						info += diff + "::";
 						break;
 
 					case 4: // DONE
-						diff = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - lastChangeTime;
-						lastChangeTime = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp();
+						diff = Timer.getTimestamp() - lastChangeTime;
+						lastChangeTime = Timer.getTimestamp();
 						info += diff;
 
 						var timing = lastChangeTime - startTime;
@@ -314,7 +183,7 @@ class NetScan {
 				}
 			};
 
-			startTime = lastChangeTime = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp();
+			startTime = lastChangeTime = Timer.getTimestamp();
 
 			x.open("HEAD", address, true);
 			x.send();
@@ -337,11 +206,11 @@ class NetScan {
 	static getHostsXHR(iprange, scanFinishedCB) {
 		var results = [];
 		var protocol = "http://";
-		var addresses = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].ipRangeToArray(iprange);
+		var addresses = Util.ipRangeToArray(iprange);
 
 		function handleSingleResult(address, timing, info) {
 			var status = timing < timingLowerBound || timing > timingUpperBound ? "up" : "down";
-			results.push(new __WEBPACK_IMPORTED_MODULE_2_ScanResult__["a" /* default */](
+			results.push(new ScanResult(
 				address,
 				timing,
 				status,
@@ -379,7 +248,7 @@ class NetScan {
 	 * the connection will be forcefully closed.
 	 **/
 	static createConnectionWS(address, handleSingleResult, connectionTimeout = wsoTimeout) {
-		var startTime = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp();
+		var startTime = Timer.getTimestamp();
 		var wsResult = false;
 		var timeout,
 			ws;
@@ -401,20 +270,20 @@ class NetScan {
 			ws = new WebSocket(address);
 
 			ws.onopen = function (/* evt */) {
-				onresult(address, __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - startTime, resultMsgConnected);
+				onresult(address, Timer.getTimestamp() - startTime, resultMsgConnected);
 			};
 
 			ws.onclose = function (/*CloseEvent*/ evt) {
 				if (evt.code === 4999 && evt.reason === resultMsgTimeout) {
-					onresult(address, __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - startTime, resultMsgTimeout);
+					onresult(address, Timer.getTimestamp() - startTime, resultMsgTimeout);
 				}
 				else {
-					onresult(address, __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - startTime, resultMsgDisconnected);
+					onresult(address, Timer.getTimestamp() - startTime, resultMsgDisconnected);
 				}
 			};
 
 			ws.onerror = function (/* evt */) {
-				onresult(address, __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - startTime, resultMsgError);
+				onresult(address, Timer.getTimestamp() - startTime, resultMsgError);
 			};
 
 			socketPool.push(ws);
@@ -456,7 +325,7 @@ class NetScan {
 		 * simultaneous connections for websockets (ff ~200) */
 		var results = [];
 		var protocol = "ws://";
-		var ips = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].ipRangeToArray(iprange);
+		var ips = Util.ipRangeToArray(iprange);
 
 		function handleSingleResult(address, timing, info) {
 			var status = timing < timingLowerBound || timing > timingUpperBound ? "up" : "down";
@@ -465,7 +334,7 @@ class NetScan {
 				status = "up";
 			}
 
-			results.push(new __WEBPACK_IMPORTED_MODULE_2_ScanResult__["a" /* default */](
+			results.push(new ScanResult(
 				address,
 				timing,
 				status,
@@ -526,7 +395,7 @@ class NetScan {
 			/* Always make a "new / real" request, don't use possibly cached versions. */
 			cache: "no-store"
 		};
-		var startTime = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp();
+		var startTime = Timer.getTimestamp();
 
 		var timeout = new Promise((resolve, reject) => {
 			setTimeout(() => reject(new Error(resultMsgTimeout)), connectionTimeout);
@@ -541,14 +410,14 @@ class NetScan {
 			// resp.text().then((body) => {
 			// 	console.log(body);
 			// });
-			handleSingleResult(address, __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - startTime, resultMsgData);
+			handleSingleResult(address, Timer.getTimestamp() - startTime, resultMsgData);
 		})
 			.catch(/* TypeError */ err => {
 				if (err.message === resultMsgTimeout) {
-					handleSingleResult(address, __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - startTime, resultMsgTimeout);
+					handleSingleResult(address, Timer.getTimestamp() - startTime, resultMsgTimeout);
 				}
 				else {
-					handleSingleResult(address, __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - startTime, resultMsgError + " (" + err.toString() + ")");
+					handleSingleResult(address, Timer.getTimestamp() - startTime, resultMsgError + " (" + err.toString() + ")");
 				}
 			});
 	}
@@ -565,7 +434,7 @@ class NetScan {
 	static getHostsFetch(iprange, scanFinishedCB) {
 		var results = [];
 		var protocol = "http://";
-		var addresses = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].ipRangeToArray(iprange);
+		var addresses = Util.ipRangeToArray(iprange);
 
 		function handleSingleResult(address, timing, info) {
 			var status = timing < timingLowerBound || timing > timingUpperBound ? "up" : "down";
@@ -574,7 +443,7 @@ class NetScan {
 				status = "up";
 			}
 
-			results.push(new __WEBPACK_IMPORTED_MODULE_2_ScanResult__["a" /* default */](
+			results.push(new ScanResult(
 				address,
 				timing,
 				status,
@@ -618,22 +487,22 @@ class NetScan {
 
 		request.onerror = function (/* evt */) {
 			clearTimeout(timeout);
-			handleSingleResult(address, __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - startTime, resultMsgError);
+			handleSingleResult(address, Timer.getTimestamp() - startTime, resultMsgError);
 		};
 
 		request.onload = function (/* evt */) {
 			clearTimeout(timeout);
-			handleSingleResult(address, __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - startTime, resultMsgData);
+			handleSingleResult(address, Timer.getTimestamp() - startTime, resultMsgData);
 		};
 
 		timeout = setTimeout(function () {
-			handleSingleResult(address, __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - startTime, resultMsgTimeout);
+			handleSingleResult(address, Timer.getTimestamp() - startTime, resultMsgTimeout);
 			/* this will cancel the request */
 			request.onload = request.onerror = function () { };
 			request.src = "";
 		}, connectionTimeout);
 
-		startTime = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp();
+		startTime = Timer.getTimestamp();
 		/* start the request */
 		request.src = address;
 	}
@@ -650,7 +519,7 @@ class NetScan {
 	static getHostsHTML(iprange, scanFinishedCB) {
 		var results = [];
 		var protocol = "http://";
-		var addresses = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].ipRangeToArray(iprange);
+		var addresses = Util.ipRangeToArray(iprange);
 		/* Needed because we can only make a very small amount of simultaneous requests... */
 		var concurrentRequests = 0;
 		var requestsMade = 0;
@@ -663,7 +532,7 @@ class NetScan {
 				status = "up";
 			}
 
-			results.push(new __WEBPACK_IMPORTED_MODULE_2_ScanResult__["a" /* default */](
+			results.push(new ScanResult(
 				address,
 				timing,
 				status,
@@ -732,7 +601,7 @@ class NetScan {
 			}
 
 			for (var ip in toTest) {
-				var tip = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].ipToArray(ip);
+				var tip = Util.ipToArray(ip);
 				tip[3] = "0-255";
 				tip = tip.join(".");
 				scanFunction(tip, resultAccumulator);
@@ -757,7 +626,7 @@ class NetScan {
 	 * used to perform the scan on each individual port. The default is createConnectionFetch.
 	 **/
 	static getPorts(host, portrange, scanFinishedCB, scanFunction = NetScan.createConnectionFetch) {
-		var ports = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].portStringToArray(portrange);
+		var ports = Util.portStringToArray(portrange);
 		/** 
 		 * Browser port restrictions, can be found in the fetch spec:
 		 * https://fetch.spec.whatwg.org/#port-blocking 
@@ -866,7 +735,7 @@ class NetScan {
 				status = "closed";
 			}
 
-			results.push(new __WEBPACK_IMPORTED_MODULE_2_ScanResult__["a" /* default */](
+			results.push(new ScanResult(
 				address,
 				timing,
 				status,
@@ -898,7 +767,7 @@ class NetScan {
 		 * differences in chrome: currently no entries for failed resources, see:
 		 * https://bugs.chromium.org/p/chromium/issues/detail?id=460879
 		 */
-		if (results.length < 1 || !(results[0] instanceof __WEBPACK_IMPORTED_MODULE_2_ScanResult__["a" /* default */])) {
+		if (results.length < 1 || !(results[0] instanceof ScanResult)) {
 			return;
 		}
 
@@ -954,206 +823,3 @@ class NetScan {
 	}
 
 }
-/* harmony export (immutable) */ __webpack_exports__["a"] = NetScan;
-
-
-
-/***/ }),
-/* 3 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-/**
- * Util contains all utility functions for parsing and converting data structures.
- */
-class Util {
-	/**
-	 * Parses a WebRTC SDP and gathers all public and private ip and port 
-	 * combinations that can be found. 
-	 * @param {String} candidate The candidate SDP string.
-	 * @return {Object} Containing the entries type (the entry type),
-	 * ip (private ip address), port (private port), public_ip (public ip), 
-	 * public_port (public port), or null if nothing can be found, which is 
-	 * only the case if no valid candidate line is in the string.
-	 */
-	static extractConnectionInfo(candidate) {
-		/**
-		 * SDP candidate line structure (a=candidate:)
-		 * 1 1 UDP 1686110207  80.110.26.244 50774 typ srflx raddr 192.168.2.108 rport 50774
-		 * 2 1 UDP 25108223 	237.30.30.30 58779 typ relay raddr   47.61.61.61 rport 54761
-		 * 0 			1 					UDP 				2122252543 		192.168.2.108 		52229 		typ host
-		 * candidate | rtp (1)/rtcp (2) | protocol (udp/tcp) | priority 	| ip				| port		| type (host/srflx/relay)
-		 **/
-		var host = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate);
-		if (host !== null && host.length === 3) {
-			return { type: "host", ip: host[1], port: host[2], public_ip: null, public_port: null };
-		}
-
-		var srflx = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ srflx raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
-		if (srflx !== null && srflx.length === 5) {
-			return { type: "srflx", ip: srflx[3], port: srflx[4], public_ip: srflx[1], public_port: srflx[2] };
-		}
-
-		var relay = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ relay raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
-		if (relay !== null && relay.length === 5) {
-			return { type: "relay", ip: relay[3], port: relay[4], public_ip: relay[1], public_port: relay[2] };
-		}
-
-		return null;
-	}
-
-	/**
-	 * Replaces ip and port in a WebRTC SDP candidate line string with 
-	 * the data provided in replacement.
-	 * @param {String} candidate A string containing a SDP candidate line.
-	 * @param {Object} replacement An object with ip and port properties which 
-	 * will replace the original ip and port.
-	 * @return The replaced string.
-	 */
-	static replaceConnectionInfo(candidate, replacement) {
-		var m = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate)
-			|| /((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
-
-		if (m !== null) {
-			var t = candidate.replace(m[1], replacement.ip);
-			t = t.replace(m[2], replacement.port);
-			return t;
-		}
-
-		return candidate;
-	}
-
-	/**
-	 * Converts a string containing an ip4 address to an array of Numbers.
-	 * @param {String} ip An ip4 address.
-	 * @return {Array} containing the 4 octets as decimal numbers.
-	 */
-	static ipToArray(ip) {
-		return ip.split(".").map(Number);
-	}
-
-	/**
-	 * Converts a range of ip addresses to an array which contains 
-	 * all single addresses. (Expands the range.)
-	 * @param {String} iprange A range of ip adresses, like "192.168.0.1-255"
-	 * @return {Array} of ip strings.
-	 */
-	static ipRangeToArray(iprange) {
-		var ranges = [];
-		iprange.split(".").map(function (elem) {
-			if (elem.indexOf("-") !== -1) {
-				ranges.push(elem.split("-").map(Number));
-			}
-			else {
-				var n = Number(elem);
-				ranges.push([n, n]);
-			}
-		});
-
-		var ips = [];
-		for (var i = ranges[0][0]; i <= ranges[0][1]; i++) {
-			for (var j = ranges[1][0]; j <= ranges[1][1]; j++) {
-				for (var k = ranges[2][0]; k <= ranges[2][1]; k++) {
-					for (var l = ranges[3][0]; l <= ranges[3][1]; l++) {
-						ips.push([i, j, k, l].join("."));
-					}
-				}
-			}
-		}
-
-		return ips;
-	}
-
-	/**
-	 * Converts a range of ports in string representation 
-	 * to an array.
-	 * @param {String} portrange A portrange (two valid ports separated by -).
-	 * @return {Array} of ports (as Numbers).
-	 */
-	static portRangeToArray(portrange) {
-		if (portrange.indexOf("-") !== -1) {
-			var range = portrange.split("-").map(Number);
-
-			var ports = [];
-			for (var i = range[0]; i <= range[1]; i++) {
-				ports.push(i);
-			}
-
-			return ports;
-		}
-		else {
-			return [Number(portrange)];
-		}
-	}
-
-	/**
-	 * Parses a string of ports and/or port ranges and 
-	 * creates an array containing all ports for easy 
-	 * iteration.
-	 * Example: "80,90,100-103" becomes [80,90,100,101,102,103]
-	 * @param {String} portstring The string containing ports.
-	 * @return {Array} of ports.
-	 */
-	static portStringToArray(portstring) {
-		if (portstring.indexOf(",") !== -1) {
-			var ports = [];
-			portstring.split(",").map((val) => {
-				ports = ports.concat(Util.portRangeToArray(val));
-			});
-			return ports;
-		}
-		else {
-			return Util.portRangeToArray(portstring);
-		}
-	}
-
-	/**
-	 * Determines if a specific ip is a local address.
-	 * @param {String | Array} ip The ip address.
-	 * @return {boolean} True if the ip is local.
-	 */
-	static isPrivateIp(ip) {
-		if (typeof ip === "string") {
-			ip = Util.ipToArray(ip);
-		}
-
-		if (ip[0] === 10
-			|| (ip[0] === 172 && ip[1] >= 16 && ip[1] <= 31)
-			|| (ip[0] === 192 && ip[1] === 168)) {
-			return true;
-		}
-	}
-
-}
-/* harmony export (immutable) */ __webpack_exports__["a"] = Util;
-
-
-/***/ }),
-/* 4 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-/**
- * Data object used for scan results.
- */
-class ScanResult {
-	constructor(address, duration, status, info) {
-		this.address = address;
-		this.duration = duration;
-		this.status = status;
-		this.info = info;
-	}
-
-	toString () {
-		return "ScanResult for '" + this.address + "', duration: " + this.duration.toFixed(2) + ", status: " + this.status + ", info: " + this.info;
-	}
-
-	toTableString () {
-		return "<tr><td>" + this.address + "</td><td>" + this.status + "</td><td>" + this.duration.toFixed(2) + "</td><td>" + this.info + "</td></tr>";
-	}
-}
-/* harmony export (immutable) */ __webpack_exports__["a"] = ScanResult;
-
-
-/***/ })
-/******/ ]);

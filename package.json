@@ -4,7 +4,8 @@
 	"description": "",
 	"main": "src/netscan.js",
 	"scripts": {
-		"build": "webpack"
+		"build": "webpack",
+		"build-dev": "webpack"
 	},
 	"author": "Tobias Fink",
 	"license": "MIT",
@@ -14,7 +15,8 @@
 	},
 	"eslintConfig": {
 		"parserOptions": {
-			"ecmaVersion": 8
+			"ecmaVersion": 8,
+			"sourceType": "module"
 		},
 		"env": {
 			"node": true,

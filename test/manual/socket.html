@@ -3,6 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<title>test</title>
+		<!-- <script src="adapter.js"></script> -->
 		<style>
 			ul {
 				display: inline-block;
@@ -24,8 +25,24 @@
 		</style>
 	</head>
 	<body>
-		<script src="../src/netscan.js"></script>
+		<script src="../../dist/netscan.js"></script>
 		<script>
+			function list(r) {
+				var upList = document.getElementById("up");
+				var downList = document.getElementById("down");
+
+				r.sort((a,b) => {return a.time - b.time});
+				
+				for(var i = 0; i < r.length; i++){
+					if(r[i].status === "up"){
+						upList.insertAdjacentHTML("beforeend", "<li>"+ r[i].ip +" <span style=\"color:#ccc\">"+ r[i].time.toFixed(2) +"</span></li>");
+					}
+					else {
+						downList.insertAdjacentHTML("beforeend", "<li>"+ r[i].ip +" <span style=\"color:#ccc\">"+ r[i].time.toFixed(2) +"</span></li>");
+					}
+				}
+			}
+
 			function tabinsert(r) {
 				var table = document.getElementById("tab");
 			
@@ -33,16 +50,20 @@
 					tab.insertAdjacentHTML("beforeend", r[i].toTableString());
 				}
 			}
-
-
+			
+	/*
+			//NetScan.Scan.getHostsWS("128.130.240.0-255", list);
+			//NetScan.Scan.getHostsWS("192.168.2.0-25", list);
+			NetScan.Scan.getHostsWS("10.0.0.0-255", list);
+	*/
 			NetScan.Timer.start("a");
 			NetScan.Scan.getHostsLocalNetwork((result) =>{
 				NetScan.Timer.stop("a");
 				tabinsert(result);
 				document.getElementById("time").innerHTML = NetScan.Timer.duration("a");
-			}, NetScan.Scan.getHostsHTML);
-
+			}, NetScan.Scan.getHostsWS);
 		</script>
+
 
 		<h1>html stub for testing</h1>
 		<h3>duration: <span id="time">(processing...)</span> ms</h3>
