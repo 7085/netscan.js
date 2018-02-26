@@ -36,7 +36,7 @@ if (!WebSocket) {
 
 /**
  * Internal variables.
- **/
+ */
 const socketPool = [];
 const poolCap = 130;
 /* This value should be kept very low (<= 10), otherwise many wrong results will be produced */
@@ -44,7 +44,7 @@ const maxConcurrentHTMLRequests = 5;
 
 /**
  * Timing default settings.
- **/
+ */
 const timingLowerBound = 2900;
 const timingUpperBound = 10000;
 const xhrTimeout = 20000;
@@ -55,7 +55,7 @@ const portScanTimeout = 5000;
 
 /**
  * Result messages used internally.
- **/
+ */
 const resultMsgTimeout = "NETWORK TIMEOUT";
 const resultMsgError = "NETWORK ERROR";
 const resultMsgData = "DATA RECEIVED";
@@ -96,7 +96,7 @@ export default class NetScan {
 			/** 
 			 * At this state (evt.candidate == null) we are finished, see:
 			 * https://developer.mozilla.org/de/docs/Web/API/RTCPeerConnection/onicecandidate 
-			 **/
+			 */
 			else {
 				Timer.stop("getHostIps");
 				sendChan.close();
@@ -121,7 +121,7 @@ export default class NetScan {
 			/**
 			 * Fallback for older version of createOffer which requires 
 			 * two callbacks instead of the newer Promise which will be returned 
-			 **/
+			 */
 			conn.createOffer(
 				function (offerDesc) {
 					conn.setLocalDescription(offerDesc);
@@ -143,7 +143,7 @@ export default class NetScan {
 	 *			changes and other interesting details.
 	 * @param {Number} connectionTimeout The time in milliseconds after which 
 	 * the connection will be forcefully closed.
-	 **/
+	 */
 	static createConnectionXHR(address, handleSingleResult, connectionTimeout = xhrTimeout) {
 		try {
 			var startTime = 0;
@@ -202,7 +202,7 @@ export default class NetScan {
 	 * @param {String} iprange A range of ips.
 	 * @param {Function} scanFinishedCB The callback which gets the results.
 	 * 		Array results Containing result objects for each address.
-	 **/
+	 */
 	static getHostsXHR(iprange, scanFinishedCB) {
 		var results = [];
 		var protocol = "http://";
@@ -246,7 +246,7 @@ export default class NetScan {
 	 *			changes and other interesting details.
 	 * @param {Number} connectionTimeout The time in milliseconds after which 
 	 * the connection will be forcefully closed.
-	 **/
+	 */
 	static createConnectionWS(address, handleSingleResult, connectionTimeout = wsoTimeout) {
 		var startTime = Timer.getTimestamp();
 		var wsResult = false;
@@ -288,8 +288,10 @@ export default class NetScan {
 
 			socketPool.push(ws);
 
-			/* trigger a manual close after some time, identified by "code" and "reason"
-			 * https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent#Status_codes */
+			/** 
+			 * trigger a manual close after some time, identified by "code" and "reason"
+			 * https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent#Status_codes 
+			 */
 			timeout = setTimeout(function () {
 				ws.close(4999, resultMsgTimeout);
 			}, connectionTimeout);
@@ -319,10 +321,12 @@ export default class NetScan {
 	 * @param {String} iprange A range of ips.
 	 * @param {Function} scanFinishedCB The callback which gets the results.
 	 * 		Array results Containing result objects for each address.
-	 **/
+	 */
 	static getHostsWS(iprange, scanFinishedCB) {
-		/* create a connection pool, browsers only support a certain limit of
-		 * simultaneous connections for websockets (ff ~200) */
+		/** 
+		 * create a connection pool, browsers only support a certain limit of
+		 * simultaneous connections for websockets (ff ~200) 
+		 */
 		var results = [];
 		var protocol = "ws://";
 		var ips = Util.ipRangeToArray(iprange);
@@ -382,15 +386,15 @@ export default class NetScan {
 	 *			changes and other interesting details.
 	 * @param {Number} connectionTimeout The time in milliseconds after which 
 	 * the connection will be forcefully closed.
-	 **/
+	 */
 	static createConnectionFetch(address, handleSingleResult, connectionTimeout = fetchTimeout) {
 		var config = {
 			method: "GET",
 			/**	
-			 *	This will make an "opaque" request, such that CORS requests 
-			 * 	will succeed even if there is no "CORS header". The response gets
-			 *	"nulled", but we will know when HTTP is understood by the remote host.
-			 **/
+			 * This will make an "opaque" request, such that CORS requests 
+			 * will succeed even if there is no "CORS header". The response gets
+			 * "nulled", but we will know when HTTP is understood by the remote host.
+			 */
 			mode: "no-cors",
 			/* Always make a "new / real" request, don't use possibly cached versions. */
 			cache: "no-store"
@@ -429,8 +433,8 @@ export default class NetScan {
 	 * as soon as the scan process has finished.
 	 * @param {String} iprange A range of ips.
 	 * @param {Function} scanFinishedCB The callback which gets the results.
-	 * 		Array results Containing result objects for each address.
-	 **/
+	 *        {Array} results Containing result objects for each address.
+	 */
 	static getHostsFetch(iprange, scanFinishedCB) {
 		var results = [];
 		var protocol = "http://";
@@ -479,7 +483,7 @@ export default class NetScan {
 	 *			changes and other interesting details.
 	 * @param {Number} connectionTimeout The time in milliseconds after which 
 	 * the connection will be forcefully closed.
-	 **/
+	 */
 	static createConnectionHTML(address, handleSingleResult, connectionTimeout = htmlTimeout) {
 		var request = new Image();
 		var timeout,
@@ -515,7 +519,7 @@ export default class NetScan {
 	 * @param {String} iprange A range of ips.
 	 * @param {Function} scanFinishedCB The callback which gets the results.
 	 * 		Array results Containing result objects for each address.
-	 **/
+	 */
 	static getHostsHTML(iprange, scanFinishedCB) {
 		var results = [];
 		var protocol = "http://";
@@ -577,7 +581,7 @@ export default class NetScan {
 	 * @param {Function} scanFunction (optional) One of the available functions
 	 * 		for scanning an iprange can be provided. The default is the function using 
 	 * 		the fetch API.
-	 **/
+	 */
 	static getHostsLocalNetwork(scanFinishedCB, scanFunction = NetScan.getHostsFetch) {
 		NetScan.getHostIps(function (ips) {
 			var toTest = {};
@@ -624,7 +628,7 @@ export default class NetScan {
 	 * as argument to the callback.
 	 * @param {Function} scanFunction One of the 'createConnection*'-functions which will be
 	 * used to perform the scan on each individual port. The default is createConnectionFetch.
-	 **/
+	 */
 	static getPorts(host, portrange, scanFinishedCB, scanFunction = NetScan.createConnectionFetch) {
 		var ports = Util.portStringToArray(portrange);
 		/** 
@@ -644,7 +648,7 @@ export default class NetScan {
 		 * 		https://dxr.mozilla.org/mozilla-central/search?q=%2Boverrides%3A%22nsIProtocolHandler%3A%3AAllowPort%28int32_t%2C+const+char+*%2C+bool+*%29%22
 		 * Still there is the possibility that the ftp protocol will be removed (at least from chrome/ium),
 		 * see: https://bugs.chromium.org/p/chromium/issues/detail?id=333943
-		 **/
+		 */
 		var blocked = [
 			1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37,
 			42, 43, 53, 77, 79, 87, 95, 101, 102, 103, 104, 109,
@@ -712,7 +716,7 @@ export default class NetScan {
 		 * 								timing entry check possible 
 		 * [+] port instaclose no msg:	returns very fast, perf timing entry check possible
 		 * [+] port instaclose w/ msg:	returns very fast, perf timing entry check possible 
-		 **/
+		 */
 		function onResult(address, timing, info) {
 			var status = "???";
 

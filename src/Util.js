@@ -18,7 +18,7 @@ export default class Util {
 		 * 2 1 UDP 25108223 	237.30.30.30 58779 typ relay raddr   47.61.61.61 rport 54761
 		 * 0 			1 					UDP 				2122252543 		192.168.2.108 		52229 		typ host
 		 * candidate | rtp (1)/rtcp (2) | protocol (udp/tcp) | priority 	| ip				| port		| type (host/srflx/relay)
-		 **/
+		 */
 		var host = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate);
 		if (host !== null && host.length === 3) {
 			return { type: "host", ip: host[1], port: host[2], public_ip: null, public_port: null };
