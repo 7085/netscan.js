@@ -388,7 +388,7 @@ export default class NetScan {
 	 * the connection will be forcefully closed.
 	 */
 	static createConnectionFetch(address, handleSingleResult, connectionTimeout = fetchTimeout) {
-		var config = {
+		var config = new Request(address, {
 			method: "GET",
 			/**	
 			 * This will make an "opaque" request, such that CORS requests 
@@ -398,14 +398,14 @@ export default class NetScan {
 			mode: "no-cors",
 			/* Always make a "new / real" request, don't use possibly cached versions. */
 			cache: "no-store"
-		};
+		});
 		var startTime = Timer.getTimestamp();
 
 		var timeout = new Promise((resolve, reject) => {
 			setTimeout(() => reject(new Error(resultMsgTimeout)), connectionTimeout);
 		});
 
-		var requ = fetch(address, config);
+		var requ = fetch(config);
 
 		var p = Promise.race([timeout, requ]);
 		p.then((/* resp */) => {
@@ -607,8 +607,8 @@ export default class NetScan {
 			for (var ip in toTest) {
 				var tip = Util.ipToArray(ip);
 				tip[3] = "0-255";
-				tip = tip.join(".");
-				scanFunction(tip, resultAccumulator);
+				const range = tip.join(".");
+				scanFunction(range, resultAccumulator);
 			}
 		});
 	}
