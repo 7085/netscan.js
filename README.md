@@ -35,67 +35,6 @@ Not only the standard request timing information can be obtained.
 It also allows some interesting request configurations which leak additional data that can be further used.
 
 
-Related work
-------------
-
-In this section some projects related to client side network scanning with JavaScript are discussed.
-
-- http://www.andlabs.org/tools/jsrecon/jsrecon.html (at least since 2011, exact date unknown)
-  JSRecon is only guaranteed to work on Windows machines and although it is designed to scan internal networks only, it is possible to scan
-  arbitrary external networks after some small changes in the source code. 
-  The scanning is done by using *XHR* and *WebSockets*.
-  The timing of the internal states and state changes of those JavaScript objects is measured and compared to predefined values.
-  That allows the detection of hosts and the status of remote ports (open, closed, etc.).
-- https://github.com/beefproject/beef/wiki/Network-Discovery 
-  BeEF includes several modules for network exploration: 
-  - One which gets the internal lan ip by using *WebRTC* or a *Java applet*. (since 2013)
-  - Lan subnet identification and host checking (ping sweep) by timed *XHR* or a *Java applet*. (since 2015/2011)
-  - Host checking (like above with timed *XHR*) while also considering DNS resolution ("DNS enumeration module"). (since 2011)
-  - Port scanning which combines *XHR*, *WebSockets* and *DOM element requests* and timing all three methods. (since 2011)
-  - identifying routers and different server software by loading commonly used resources with *DOM element requests*. Modules "internal network fingerprinting", "js lanscanner" and "get http servers". (since 2011/2015/2015)
-- http://algorithm.dk/lanscan (2015)
-  This is a very modern implementation using *WebRTC* and *WebSockets* based on the blogpost at [1].
-  The tool ("lanscan") is able to scan the local network. In the initial step *WebRTC* is used to find the clients local ip.
-  Afterwards a *WebSocket* connection is opened to scan for possible hosts using the internal socket state to determine the final status.
-  Although on the blog it is stated that several things are planned and an article explaining the concept will appear soon, this project
-  has not been updated for a longer time. A very short timeout is used to speed up scan times, but sacrificing result accuracy.
-- https://thehackerblog.com/sonar-a-framework-for-scanning-and-exploiting-internal-hosts-with-a-webpage/ (2015)
-  "sonar.js" was designed as a framework for local network and especially router exploitation.
-  The exact same network discovery methods of the "lanscan" tool are used for this purpose. 
-  After the hosts that are alive are recorded, an identification process starts. 
-  It tries to load resources like images and stylesheets which are present in the web administration panels of routers.
-  A predefined database where those common resource files are defined is included. 
-  The fingerprint database is much smaller than those used by the BeEF project.
-  It also seems that this project has been abandoned, because the last updates are several months old.
-- https://github.com/joevennix/lan-js (2015)
-  "lan-js" is made for identifying/fingerprinting routers.
-  The author(s) took the code for identifying the local ip from BeEF as can be seen in ip\_discovery.js
-  *WebSockets* or *IMG loading* (depending on which is available) is used to find active hosts in the local network.
-  *IMG loading* is also used for fingerprinting afterwards. 
-  Code for detecting css stylesheet fingerprints is also included, but their
-  database contains only image fingerprints.
-- https://dunnesec.com/2013/09/16/html5-webrtc-local-ip-discovery/ (2013)
-  First the local ip is detected by this JavaScript. 
-  Based on this result the local network is scanned for active hosts.
-  The simple *IMG loading* is used for this. 
-  The author states that it works on all popular desktop operating systems (Win, OSX, Linux) with Firefox and that it does not work in Chrome on Linux.
-- https://defuse.ca/in-browser-port-scanning.htm (2015) 
-  Uses DOM element requests.
-- https://github.com/allodoxaphobia/JenScan (2012)
-  Uses DOM element requests.
-- http://jsscan.sourceforge.net/ (2009)
-  Uses DOM element requests.
-- http://www.gnucitizen.org/blog/javascript-port-scanner/ (2006)
-  Does not exist anymore, source can be found at http://www.securiteam.com/exploits/5DP010KJFE.html)
-- https://www.myria.de/lan-scan/index.php (2007)
-  This scanners primary goal is to find and identify routers in the network through well known images.
-  It contains a database of several image entries.
-- https://github.com/skepticfx/scanner.skepticfx.com (2013)
-  The authors Ahamed Nafeez M. and Anjana G. are stating that they are using: 
-  > Pure + Awesome Websockets & Cross-Origin Resource Sharing features of the browser to scan internal network hosts and IP Addresses.
-  Actually they are only using *XHR* to probe combinations of ip and port together with timing to determine if a host is alive. 
-
-
 Approach
 --------
 This section describes all details of the "NetScan.js"-library, what it is capable of and how the 
@@ -227,6 +166,67 @@ In a second attempt various manipulations in the session description protocol (S
 The goal was to establish arbitrary connections to any ip address chosen by us and collect data directly, through errors or timing side channels subsequently. 
 I was able to achieve to send packets to addresses chosen manually, but I did not manage to get manually crafted data through, as no ICE connection was established. This could need further exploration, because WebRTC and the internal mechanisms are rather complex and include a lot of different specifications and RFCs. 
 Some useful information on SDP can be found at [8] [9] [9] [10] [11] [13].
+
+
+Related work
+------------
+In this section some projects related to client side network scanning with JavaScript are discussed.
+
+- http://www.andlabs.org/tools/jsrecon/jsrecon.html (at least since 2011, exact date unknown)
+  JSRecon is only guaranteed to work on Windows machines and although it is designed to scan internal networks only, it is possible to scan
+  arbitrary external networks after some small changes in the source code. 
+  The scanning is done by using *XHR* and *WebSockets*.
+  The timing of the internal states and state changes of those JavaScript objects is measured and compared to predefined values.
+  That allows the detection of hosts and the status of remote ports (open, closed, etc.).
+- https://github.com/beefproject/beef/wiki/Network-Discovery 
+  BeEF includes several modules for network exploration: 
+  - One which gets the internal lan ip by using *WebRTC* or a *Java applet*. (since 2013)
+  - Lan subnet identification and host checking (ping sweep) by timed *XHR* or a *Java applet*. (since 2015/2011)
+  - Host checking (like above with timed *XHR*) while also considering DNS resolution ("DNS enumeration module"). (since 2011)
+  - Port scanning which combines *XHR*, *WebSockets* and *DOM element requests* and timing all three methods. (since 2011)
+  - identifying routers and different server software by loading commonly used resources with *DOM element requests*. Modules "internal network fingerprinting", "js lanscanner" and "get http servers". (since 2011/2015/2015)
+- http://algorithm.dk/lanscan (2015)
+  This is a very modern implementation using *WebRTC* and *WebSockets* based on the blogpost at [1].
+  The tool ("lanscan") is able to scan the local network. In the initial step *WebRTC* is used to find the clients local ip.
+  Afterwards a *WebSocket* connection is opened to scan for possible hosts using the internal socket state to determine the final status.
+  Although on the blog it is stated that several things are planned and an article explaining the concept will appear soon, this project
+  has not been updated for a longer time. A very short timeout is used to speed up scan times, but sacrificing result accuracy.
+- https://thehackerblog.com/sonar-a-framework-for-scanning-and-exploiting-internal-hosts-with-a-webpage/ (2015)
+  "sonar.js" was designed as a framework for local network and especially router exploitation.
+  The exact same network discovery methods of the "lanscan" tool are used for this purpose. 
+  After the hosts that are alive are recorded, an identification process starts. 
+  It tries to load resources like images and stylesheets which are present in the web administration panels of routers.
+  A predefined database where those common resource files are defined is included. 
+  The fingerprint database is much smaller than those used by the BeEF project.
+  It also seems that this project has been abandoned, because the last updates are several months old.
+- https://github.com/joevennix/lan-js (2015)
+  "lan-js" is made for identifying/fingerprinting routers.
+  The author(s) took the code for identifying the local ip from BeEF as can be seen in ip\_discovery.js
+  *WebSockets* or *IMG loading* (depending on which is available) is used to find active hosts in the local network.
+  *IMG loading* is also used for fingerprinting afterwards. 
+  Code for detecting css stylesheet fingerprints is also included, but their
+  database contains only image fingerprints.
+- https://dunnesec.com/2013/09/16/html5-webrtc-local-ip-discovery/ (2013)
+  First the local ip is detected by this JavaScript. 
+  Based on this result the local network is scanned for active hosts.
+  The simple *IMG loading* is used for this. 
+  The author states that it works on all popular desktop operating systems (Win, OSX, Linux) with Firefox and that it does not work in Chrome on Linux.
+- https://defuse.ca/in-browser-port-scanning.htm (2015) 
+  Uses DOM element requests.
+- https://github.com/allodoxaphobia/JenScan (2012)
+  Uses DOM element requests.
+- http://jsscan.sourceforge.net/ (2009)
+  Uses DOM element requests.
+- http://www.gnucitizen.org/blog/javascript-port-scanner/ (2006)
+  Does not exist anymore, source can be found at http://www.securiteam.com/exploits/5DP010KJFE.html)
+- https://www.myria.de/lan-scan/index.php (2007)
+  This scanners primary goal is to find and identify routers in the network through well known images.
+  It contains a database of several image entries.
+- https://github.com/skepticfx/scanner.skepticfx.com (2013)
+  The authors Ahamed Nafeez M. and Anjana G. are stating that they are using: 
+  > Pure + Awesome Websockets & Cross-Origin Resource Sharing features of the browser to scan internal network hosts and IP Addresses.
+  Actually they are only using *XHR* to probe combinations of ip and port together with timing to determine if a host is alive. 
+
 
 
 [1]: http://www.golgi.io/excuse-me-sir-your-webrtc-is-leaking/
