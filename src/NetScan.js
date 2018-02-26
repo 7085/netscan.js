@@ -10,9 +10,13 @@ import Util from "Util";
 import ScanResult from "ScanResult";
 
 
+// @ts-ignore
 const RTCPeerConnection = window.RTCPeerConnection
+	// @ts-ignore
 	|| window.mozRTCPeerConnection
+	// @ts-ignore
 	|| window.webkitRTCPeerConnection
+	// @ts-ignore
 	|| window.msRTCPeerConnection;
 
 
