@@ -19,17 +19,17 @@ export default class Util {
 		 * 0 			1 					UDP 				2122252543 		192.168.2.108 		52229 		typ host
 		 * candidate | rtp (1)/rtcp (2) | protocol (udp/tcp) | priority 	| ip				| port		| type (host/srflx/relay)
 		 */
-		var host = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate);
+		const host = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate);
 		if (host !== null && host.length === 3) {
 			return { type: "host", ip: host[1], port: host[2], public_ip: null, public_port: null };
 		}
 
-		var srflx = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ srflx raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
+		const srflx = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ srflx raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
 		if (srflx !== null && srflx.length === 5) {
 			return { type: "srflx", ip: srflx[3], port: srflx[4], public_ip: srflx[1], public_port: srflx[2] };
 		}
 
-		var relay = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ relay raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
+		const relay = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ relay raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
 		if (relay !== null && relay.length === 5) {
 			return { type: "relay", ip: relay[3], port: relay[4], public_ip: relay[1], public_port: relay[2] };
 		}
@@ -46,11 +46,11 @@ export default class Util {
 	 * @return The replaced string.
 	 */
 	static replaceConnectionInfo(candidate, replacement) {
-		var m = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate)
+		const m = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate)
 			|| /((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
 
 		if (m !== null) {
-			var t = candidate.replace(m[1], replacement.ip);
+			let t = candidate.replace(m[1], replacement.ip);
 			t = t.replace(m[2], replacement.port);
 			return t;
 		}
@@ -74,7 +74,7 @@ export default class Util {
 	 * @return {Array} of ip strings.
 	 */
 	static ipRangeToArray(iprange) {
-		var ranges = [];
+		const ranges = [];
 		iprange.split(".").map(function (elem) {
 			if (elem.indexOf("-") !== -1) {
 				ranges.push(elem.split("-").map(Number));
@@ -85,11 +85,11 @@ export default class Util {
 			}
 		});
 
-		var ips = [];
-		for (var i = ranges[0][0]; i <= ranges[0][1]; i++) {
-			for (var j = ranges[1][0]; j <= ranges[1][1]; j++) {
-				for (var k = ranges[2][0]; k <= ranges[2][1]; k++) {
-					for (var l = ranges[3][0]; l <= ranges[3][1]; l++) {
+		const ips = [];
+		for (let i = ranges[0][0]; i <= ranges[0][1]; i++) {
+			for (let j = ranges[1][0]; j <= ranges[1][1]; j++) {
+				for (let k = ranges[2][0]; k <= ranges[2][1]; k++) {
+					for (let l = ranges[3][0]; l <= ranges[3][1]; l++) {
 						ips.push([i, j, k, l].join("."));
 					}
 				}
@@ -107,10 +107,10 @@ export default class Util {
 	 */
 	static portRangeToArray(portrange) {
 		if (portrange.indexOf("-") !== -1) {
-			var range = portrange.split("-").map(Number);
+			const range = portrange.split("-").map(Number);
 
-			var ports = [];
-			for (var i = range[0]; i <= range[1]; i++) {
+			const ports = [];
+			for (let i = range[0]; i <= range[1]; i++) {
 				ports.push(i);
 			}
 
@@ -131,7 +131,7 @@ export default class Util {
 	 */
 	static portStringToArray(portstring) {
 		if (portstring.indexOf(",") !== -1) {
-			var ports = [];
+			let ports = [];
 			portstring.split(",").map((val) => {
 				ports = ports.concat(Util.portRangeToArray(val));
 			});

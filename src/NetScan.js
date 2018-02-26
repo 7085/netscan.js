@@ -76,9 +76,9 @@ export default class NetScan {
 	 */
 	static getHostIps(cbReturn) {
 		Timer.start("getHostIps");
-		var ips = [];
+		const ips = [];
 
-		var serverConfig = {
+		const serverConfig = {
 			iceServers: [
 				{ urls: ["stun:stun.l.google.com:19302"] }
 			]
@@ -89,10 +89,10 @@ export default class NetScan {
 
 		conn.onicecandidate = function (evt) {
 			if (evt.candidate !== null) {
-				var candidate = evt.candidate;
+				const candidate = evt.candidate;
 				//console.log("Got candidate:", candidate.candidate);
 
-				var host = Util.extractConnectionInfo(candidate.candidate);
+				const host = Util.extractConnectionInfo(candidate.candidate);
 				if (host !== null) {
 					ips.push(host);
 				}
@@ -155,7 +155,7 @@ export default class NetScan {
 			var diff = 0;
 			var info = "";
 
-			var x = new XMLHttpRequest();
+			const x = new XMLHttpRequest();
 			x.timeout = connectionTimeout;
 
 			x.onreadystatechange = function () {
@@ -172,14 +172,15 @@ export default class NetScan {
 						info += diff + "::";
 						break;
 
-					case 4: // DONE
+					case 4: { // DONE
 						diff = Timer.getTimestamp() - lastChangeTime;
 						lastChangeTime = Timer.getTimestamp();
 						info += diff;
 
-						var timing = lastChangeTime - startTime;
+						const timing = lastChangeTime - startTime;
 						handleSingleResult(address, timing, info);
 						break;
+					}
 
 					default:
 						/* we don't care about other states (OPENED, UNSENT) */
@@ -208,12 +209,12 @@ export default class NetScan {
 	 * 		Array results Containing result objects for each address.
 	 */
 	static getHostsXHR(iprange, scanFinishedCB) {
-		var results = [];
-		var protocol = "http://";
-		var addresses = Util.ipRangeToArray(iprange);
+		const results = [];
+		const protocol = "http://";
+		const addresses = Util.ipRangeToArray(iprange);
 
 		function handleSingleResult(address, timing, info) {
-			var status = timing < timingLowerBound || timing > timingUpperBound ? "up" : "down";
+			const status = timing < timingLowerBound || timing > timingUpperBound ? "up" : "down";
 			results.push(new ScanResult(
 				address,
 				timing,
@@ -233,7 +234,7 @@ export default class NetScan {
 		/* clear all perftiming entries for reliable results */
 		NetScan.clearPerfTimingData();
 
-		for (var i = 0; i < addresses.length; i++) {
+		for (let i = 0; i < addresses.length; i++) {
 			NetScan.createConnectionXHR(protocol + addresses[i], handleSingleResult);
 		}
 	}
@@ -252,10 +253,10 @@ export default class NetScan {
 	 * the connection will be forcefully closed.
 	 */
 	static createConnectionWS(address, handleSingleResult, connectionTimeout = wsoTimeout) {
-		var startTime = Timer.getTimestamp();
+		const startTime = Timer.getTimestamp();
 		var wsResult = false;
-		var timeout,
-			ws;
+		var timeout;
+		var ws;
 
 		function onresult(address, timing, info) {
 			if (!wsResult) {
@@ -331,9 +332,9 @@ export default class NetScan {
 		 * create a connection pool, browsers only support a certain limit of
 		 * simultaneous connections for websockets (ff ~200) 
 		 */
-		var results = [];
-		var protocol = "ws://";
-		var ips = Util.ipRangeToArray(iprange);
+		const results = [];
+		const protocol = "ws://";
+		const ips = Util.ipRangeToArray(iprange);
 
 		function handleSingleResult(address, timing, info) {
 			var status = timing < timingLowerBound || timing > timingUpperBound ? "up" : "down";
@@ -354,7 +355,7 @@ export default class NetScan {
 		NetScan.clearPerfTimingData();
 
 		/* initially fill pool */
-		for (var i = 0; i < poolCap && ips.length > 0; i++) {
+		for (let i = 0; i < poolCap && ips.length > 0; i++) {
 			NetScan.createConnectionWS(protocol + ips.shift(), handleSingleResult);
 		}
 
@@ -392,7 +393,7 @@ export default class NetScan {
 	 * the connection will be forcefully closed.
 	 */
 	static createConnectionFetch(address, handleSingleResult, connectionTimeout = fetchTimeout) {
-		var config = new Request(address, {
+		const config = new Request(address, {
 			method: "GET",
 			/**	
 			 * This will make an "opaque" request, such that CORS requests 
@@ -403,15 +404,15 @@ export default class NetScan {
 			/* Always make a "new / real" request, don't use possibly cached versions. */
 			cache: "no-store"
 		});
-		var startTime = Timer.getTimestamp();
+		const startTime = Timer.getTimestamp();
 
-		var timeout = new Promise((resolve, reject) => {
+		const timeout = new Promise((resolve, reject) => {
 			setTimeout(() => reject(new Error(resultMsgTimeout)), connectionTimeout);
 		});
 
-		var requ = fetch(config);
+		const requ = fetch(config);
 
-		var p = Promise.race([timeout, requ]);
+		const p = Promise.race([timeout, requ]);
 		p.then((/* resp */) => {
 			// console.log(resp.headers);
 			// console.log(resp.type, resp.ok, resp.status, resp.statusText);
@@ -419,15 +420,14 @@ export default class NetScan {
 			// 	console.log(body);
 			// });
 			handleSingleResult(address, Timer.getTimestamp() - startTime, resultMsgData);
-		})
-			.catch(/* TypeError */ err => {
-				if (err.message === resultMsgTimeout) {
-					handleSingleResult(address, Timer.getTimestamp() - startTime, resultMsgTimeout);
-				}
-				else {
-					handleSingleResult(address, Timer.getTimestamp() - startTime, resultMsgError + " (" + err.toString() + ")");
-				}
-			});
+		}).catch(/* TypeError */ err => {
+			if (err.message === resultMsgTimeout) {
+				handleSingleResult(address, Timer.getTimestamp() - startTime, resultMsgTimeout);
+			}
+			else {
+				handleSingleResult(address, Timer.getTimestamp() - startTime, resultMsgError + " (" + err.toString() + ")");
+			}
+		});
 	}
 
 
@@ -440,9 +440,9 @@ export default class NetScan {
 	 *        {Array} results Containing result objects for each address.
 	 */
 	static getHostsFetch(iprange, scanFinishedCB) {
-		var results = [];
-		var protocol = "http://";
-		var addresses = Util.ipRangeToArray(iprange);
+		const results = [];
+		const protocol = "http://";
+		const addresses = Util.ipRangeToArray(iprange);
 
 		function handleSingleResult(address, timing, info) {
 			var status = timing < timingLowerBound || timing > timingUpperBound ? "up" : "down";
@@ -470,7 +470,7 @@ export default class NetScan {
 		/* clear all perftiming entries for reliable results */
 		NetScan.clearPerfTimingData();
 
-		for (var i = 0; i < addresses.length; i++) {
+		for (let i = 0; i < addresses.length; i++) {
 			NetScan.createConnectionFetch(protocol + addresses[i], handleSingleResult);
 		}
 	}
@@ -489,9 +489,9 @@ export default class NetScan {
 	 * the connection will be forcefully closed.
 	 */
 	static createConnectionHTML(address, handleSingleResult, connectionTimeout = htmlTimeout) {
-		var request = new Image();
-		var timeout,
-			startTime;
+		const request = new Image();
+		var timeout;
+		var startTime;
 
 		request.onerror = function (/* evt */) {
 			clearTimeout(timeout);
@@ -525,9 +525,9 @@ export default class NetScan {
 	 * 		Array results Containing result objects for each address.
 	 */
 	static getHostsHTML(iprange, scanFinishedCB) {
-		var results = [];
-		var protocol = "http://";
-		var addresses = Util.ipRangeToArray(iprange);
+		const results = [];
+		const protocol = "http://";
+		const addresses = Util.ipRangeToArray(iprange);
 		/* Needed because we can only make a very small amount of simultaneous requests... */
 		var concurrentRequests = 0;
 		var requestsMade = 0;
@@ -588,9 +588,9 @@ export default class NetScan {
 	 */
 	static getHostsLocalNetwork(scanFinishedCB, scanFunction = NetScan.getHostsFetch) {
 		NetScan.getHostIps(function (ips) {
-			var toTest = {};
-			var testCount = 0,
-				testedCount = 0;
+			const toTest = {};
+			var testCount = 0;
+			var testedCount = 0;
 			var all = [];
 
 			function resultAccumulator(res) {
@@ -601,15 +601,15 @@ export default class NetScan {
 				}
 			}
 
-			for (var i = 0; i < ips.length; i++) {
+			for (let i = 0; i < ips.length; i++) {
 				if (toTest[ips[i].ip] === undefined) {
 					toTest[ips[i].ip] = true;
 					testCount++;
 				}
 			}
 
-			for (var ip in toTest) {
-				var tip = Util.ipToArray(ip);
+			for (let ip in toTest) {
+				const tip = Util.ipToArray(ip);
 				tip[3] = "0-255";
 				const range = tip.join(".");
 				scanFunction(range, resultAccumulator);
@@ -653,7 +653,7 @@ export default class NetScan {
 		 * Still there is the possibility that the ftp protocol will be removed (at least from chrome/ium),
 		 * see: https://bugs.chromium.org/p/chromium/issues/detail?id=333943
 		 */
-		var blocked = [
+		const blocked = [
 			1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37,
 			42, 43, 53, 77, 79, 87, 95, 101, 102, 103, 104, 109,
 			110, 111, 113, 115, 117, 119, 123, 135, 139, 143, 179,
@@ -662,13 +662,13 @@ export default class NetScan {
 			6000, 6665, 6666, 6667, 6668, 6669
 		];
 
-		var results = [];
+		const results = [];
 
 		/* clear all perftiming entries for reliable results */
 		NetScan.clearPerfTimingData();
 
-		for (var i = 0; i < ports.length; i++) {
-			var url = "http://" + host + ":" + ports[i];
+		for (let i = 0; i < ports.length; i++) {
+			let url = "http://" + host + ":" + ports[i];
 			if (blocked.indexOf(ports[i]) !== -1) {
 				/* exception which can be resolved by ftp */
 				if (ports[i] === 21 || ports[i] === 22) {
@@ -779,7 +779,7 @@ export default class NetScan {
 			return;
 		}
 
-		var connections = performance.getEntriesByType("resource").filter((entry) => {
+		const connections = performance.getEntriesByType("resource").filter((entry) => {
 			/* this is no longer valid... */
 			//return entry.duration !== 0;
 
@@ -800,9 +800,9 @@ export default class NetScan {
 			return entry.fetchStart !== entry.responseEnd;
 		});
 
-		for (var i = 0; i < connections.length; i++) {
-			for (var j = 0; j < results.length; j++) {
-				var entryName = connections[i].name;
+		for (let i = 0; i < connections.length; i++) {
+			for (let j = 0; j < results.length; j++) {
+				let entryName = connections[i].name;
 				/* trim trailing slash */
 				entryName = entryName.replace(/\/$/, "");
 				/** 
@@ -810,7 +810,7 @@ export default class NetScan {
 				 * ftp addresses dont get an entry, so we just replace everything with http
 				 * ...for now
 				 */
-				var resultAddr = results[j].address.replace(/^.+?:\/\//, "http://")
+				const resultAddr = results[j].address.replace(/^.+?:\/\//, "http://")
 					/* trim trailing slash */
 					.replace(/\/$/, "");
 
