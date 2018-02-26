@@ -51,8 +51,8 @@ In this section some projects related to client side network scanning with JavaS
   - One which gets the internal lan ip by using *WebRTC* or a *Java applet*. (since 2013)
   - Lan subnet identification and host checking (ping sweep) by timed *XHR* or a *Java applet*. (since 2015/2011)
   - Host checking (like above with timed *XHR*) while also considering DNS resolution ("DNS enumeration module"). (since 2011)
-  - Port scanning which combines *XHR*, *WebSockets* and *IMG probing* and timing all three methods. (since 2011)
-  - identifying routers and different server software by loading commonly used resources with *IMG probing*. Modules "internal network fingerprinting", "js lanscanner" and "get http servers". (since 2011/2015/2015)
+  - Port scanning which combines *XHR*, *WebSockets* and *DOM element requests* and timing all three methods. (since 2011)
+  - identifying routers and different server software by loading commonly used resources with *DOM element requests*. Modules "internal network fingerprinting", "js lanscanner" and "get http servers". (since 2011/2015/2015)
 - http://algorithm.dk/lanscan (2015)
   This is a very modern implementation using *WebRTC* and *WebSockets* based on the blogpost at [1].
   The tool ("lanscan") is able to scan the local network. In the initial step *WebRTC* is used to find the clients local ip.
