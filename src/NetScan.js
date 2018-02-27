@@ -149,54 +149,27 @@ export default class NetScan {
 	 * the connection will be forcefully closed.
 	 */
 	static createConnectionXHR(address, handleSingleResult, connectionTimeout = xhrTimeout) {
-		try {
-			var startTime = 0;
-			var lastChangeTime = 0;
-			var diff = 0;
-			var info = "";
+		var startTime = 0;
 
-			const x = new XMLHttpRequest();
-			x.timeout = connectionTimeout;
+		const x = new XMLHttpRequest();
+		x.timeout = connectionTimeout;
 
-			x.onreadystatechange = function () {
-				switch (x.readyState) {
-					case 2: // HEADERS_RECEIVED
-						diff = Timer.getTimestamp() - lastChangeTime;
-						lastChangeTime = Timer.getTimestamp();
-						info += diff + "::";
-						break;
+		x.onerror = () => {
+			handleSingleResult(address, Timer.getTimestamp() - startTime, resultMsgError);
+		};
 
-					case 3: // LOADING
-						diff = Timer.getTimestamp() - lastChangeTime;
-						lastChangeTime = Timer.getTimestamp();
-						info += diff + "::";
-						break;
+		x.ontimeout = () => {
+			handleSingleResult(address, Timer.getTimestamp() - startTime, resultMsgTimeout);
+		};
 
-					case 4: { // DONE
-						diff = Timer.getTimestamp() - lastChangeTime;
-						lastChangeTime = Timer.getTimestamp();
-						info += diff;
+		x.onload = () => {
+			handleSingleResult(address, Timer.getTimestamp() - startTime, resultMsgData);
+		};
 
-						const timing = lastChangeTime - startTime;
-						handleSingleResult(address, timing, info);
-						break;
-					}
+		startTime = Timer.getTimestamp();
 
-					default:
-						/* we don't care about other states (OPENED, UNSENT) */
-						break;
-				}
-			};
-
-			startTime = lastChangeTime = Timer.getTimestamp();
-
-			x.open("HEAD", address, true);
-			x.send();
-		}
-		catch (err) {
-			//console.log(err);
-			handleSingleResult(address, 0, resultMsgError + " (" + err.toString() + ")");
-		}
+		x.open("HEAD", address, true);
+		x.send();
 	}
 
 
@@ -225,14 +198,14 @@ export default class NetScan {
 			/* last result received, return */
 			if (results.length === addresses.length) {
 				/* check if we can add some additional info of perf timing API */
-				NetScan.updateResultsWithPerfTimingData(results, "up");
+				NetScan._updateResultsWithPerfTimingData(results, "up");
 
 				scanFinishedCB(results);
 			}
 		}
 
 		/* clear all perftiming entries for reliable results */
-		NetScan.clearPerfTimingData();
+		NetScan._clearPerfTimingData();
 
 		for (let i = 0; i < addresses.length; i++) {
 			NetScan.createConnectionXHR(protocol + addresses[i], handleSingleResult);
@@ -352,7 +325,7 @@ export default class NetScan {
 		}
 
 		/* clear all perftiming entries for reliable results */
-		NetScan.clearPerfTimingData();
+		NetScan._clearPerfTimingData();
 
 		/* initially fill pool */
 		for (let i = 0; i < poolCap && ips.length > 0; i++) {
@@ -366,7 +339,7 @@ export default class NetScan {
 				clearInterval(poolMonitor);
 
 				/* check if we can add some additional info of perf timing API */
-				NetScan.updateResultsWithPerfTimingData(results, "up");
+				NetScan._updateResultsWithPerfTimingData(results, "up");
 
 				scanFinishedCB(results);
 			}
@@ -425,7 +398,7 @@ export default class NetScan {
 				handleSingleResult(address, Timer.getTimestamp() - startTime, resultMsgTimeout);
 			}
 			else {
-				handleSingleResult(address, Timer.getTimestamp() - startTime, resultMsgError + " (" + err.toString() + ")");
+				handleSingleResult(address, Timer.getTimestamp() - startTime, resultMsgError);
 			}
 		});
 	}
@@ -461,14 +434,14 @@ export default class NetScan {
 			/* last result received, return */
 			if (results.length === addresses.length) {
 				/* check if we can add some additional info of perf timing API */
-				NetScan.updateResultsWithPerfTimingData(results, "up");
+				NetScan._updateResultsWithPerfTimingData(results, "up");
 
 				scanFinishedCB(results);
 			}
 		}
 
 		/* clear all perftiming entries for reliable results */
-		NetScan.clearPerfTimingData();
+		NetScan._clearPerfTimingData();
 
 		for (let i = 0; i < addresses.length; i++) {
 			NetScan.createConnectionFetch(protocol + addresses[i], handleSingleResult);
@@ -550,14 +523,14 @@ export default class NetScan {
 			/* last result received, return */
 			if (results.length === addresses.length) {
 				/* check if we can add some additional info of perf timing API */
-				NetScan.updateResultsWithPerfTimingData(results, "up");
+				NetScan._updateResultsWithPerfTimingData(results, "up");
 
 				scanFinishedCB(results);
 			}
 		}
 
 		/* clear all perftiming entries for reliable results */
-		NetScan.clearPerfTimingData();
+		NetScan._clearPerfTimingData();
 
 		var requestMonitor = setInterval(function () {
 			if (requestsMade >= addresses.length) {
@@ -665,7 +638,7 @@ export default class NetScan {
 		const results = [];
 
 		/* clear all perftiming entries for reliable results */
-		NetScan.clearPerfTimingData();
+		NetScan._clearPerfTimingData();
 
 		for (let i = 0; i < ports.length; i++) {
 			let url = "http://" + host + ":" + ports[i];
@@ -752,7 +725,7 @@ export default class NetScan {
 
 			if (results.length === ports.length) {
 				/* check if we can add some additional info of perf timing API */
-				NetScan.updateResultsWithPerfTimingData(results, "open");
+				NetScan._updateResultsWithPerfTimingData(results, "open");
 
 				scanFinishedCB(results);
 			}
@@ -770,7 +743,7 @@ export default class NetScan {
 	 * @param {String} statusNew The new status that will be set when data can be 
 	 * associated with a scan result.
 	 */
-	static updateResultsWithPerfTimingData(results, statusNew) {
+	static _updateResultsWithPerfTimingData(results, statusNew) {
 		/**
 		 * differences in chrome: currently no entries for failed resources, see:
 		 * https://bugs.chromium.org/p/chromium/issues/detail?id=460879
@@ -816,7 +789,7 @@ export default class NetScan {
 
 				if (entryName === resultAddr) {
 					results[j].status = statusNew;
-					results[j].info += "; " + resultMsgPerfTiming;
+					results[j].info += ", " + resultMsgPerfTiming;
 					break;
 				}
 			}
@@ -826,7 +799,7 @@ export default class NetScan {
 	/**
 	 * Purges the perfomance timing records of type "resource".
 	 */
-	static clearPerfTimingData() {
+	static _clearPerfTimingData() {
 		performance.clearResourceTimings();
 	}
 

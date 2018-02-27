@@ -48,11 +48,9 @@ The library was tested in the following browsers:
 - Firefox 45.2.0 Debian 8.5 (64-bit)
 - Firefox 58.0.2 (64-Bit)
 
-Currently it works as expected in Firefox only. 
-In Chrome only the HTML requests behave similar like in Firefox.
-The other methods for HTTP-requests don't produce usable results.
-They also have different timings.
-Furthermore Chromium only exposes partial information in the performance timing API.
+Currently it works as expected in Firefox and Chrome/Chromium, other browsers are not tested and might also work.
+**Make sure to disable plugins that might block requests to arbitrary IPs**.
+Chromium has the disadvantage of only exposing partial information in the performance timing API, because it is not fully implemented yet.
 See: [16].
 
 ### Library Structure

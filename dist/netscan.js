@@ -141,9 +141,13 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 
 
+// @ts-ignore
 const RTCPeerConnection = window.RTCPeerConnection
+	// @ts-ignore
 	|| window.mozRTCPeerConnection
+	// @ts-ignore
 	|| window.webkitRTCPeerConnection
+	// @ts-ignore
 	|| window.msRTCPeerConnection;
 
 
@@ -167,7 +171,7 @@ if (!WebSocket) {
 
 /**
  * Internal variables.
- **/
+ */
 const socketPool = [];
 const poolCap = 130;
 /* This value should be kept very low (<= 10), otherwise many wrong results will be produced */
@@ -175,7 +179,7 @@ const maxConcurrentHTMLRequests = 5;
 
 /**
  * Timing default settings.
- **/
+ */
 const timingLowerBound = 2900;
 const timingUpperBound = 10000;
 const xhrTimeout = 20000;
@@ -186,7 +190,7 @@ const portScanTimeout = 5000;
 
 /**
  * Result messages used internally.
- **/
+ */
 const resultMsgTimeout = "NETWORK TIMEOUT";
 const resultMsgError = "NETWORK ERROR";
 const resultMsgData = "DATA RECEIVED";
@@ -198,14 +202,14 @@ class NetScan {
 	/**
 	 * Retrieves all private and public ip addresses
 	 * and ports assigned to the current host.
-	 * @param {Function} cbReturn Gets a list of ip and port combinations which were
-	 * 	found in the gathering process.
+	 * @param {Function} cbReturn Gets a list of ip and port combinations 
+	 * which were found in the gathering process.
 	 */
 	static getHostIps(cbReturn) {
 		__WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].start("getHostIps");
-		var ips = [];
+		const ips = [];
 
-		var serverConfig = {
+		const serverConfig = {
 			iceServers: [
 				{ urls: ["stun:stun.l.google.com:19302"] }
 			]
@@ -216,10 +220,10 @@ class NetScan {
 
 		conn.onicecandidate = function (evt) {
 			if (evt.candidate !== null) {
-				var candidate = evt.candidate;
+				const candidate = evt.candidate;
 				//console.log("Got candidate:", candidate.candidate);
 
-				var host = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].extractConnectionInfo(candidate.candidate);
+				const host = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].extractConnectionInfo(candidate.candidate);
 				if (host !== null) {
 					ips.push(host);
 				}
@@ -227,7 +231,7 @@ class NetScan {
 			/** 
 			 * At this state (evt.candidate == null) we are finished, see:
 			 * https://developer.mozilla.org/de/docs/Web/API/RTCPeerConnection/onicecandidate 
-			 **/
+			 */
 			else {
 				__WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].stop("getHostIps");
 				sendChan.close();
@@ -252,7 +256,7 @@ class NetScan {
 			/**
 			 * Fallback for older version of createOffer which requires 
 			 * two callbacks instead of the newer Promise which will be returned 
-			 **/
+			 */
 			conn.createOffer(
 				function (offerDesc) {
 					conn.setLocalDescription(offerDesc);
@@ -274,55 +278,29 @@ class NetScan {
 	 *			changes and other interesting details.
 	 * @param {Number} connectionTimeout The time in milliseconds after which 
 	 * the connection will be forcefully closed.
-	 **/
+	 */
 	static createConnectionXHR(address, handleSingleResult, connectionTimeout = xhrTimeout) {
-		try {
-			var startTime = 0;
-			var lastChangeTime = 0;
-			var diff = 0;
-			var info = "";
+		var startTime = 0;
 
-			var x = new XMLHttpRequest();
-			x.timeout = connectionTimeout;
+		const x = new XMLHttpRequest();
+		x.timeout = connectionTimeout;
 
-			x.onreadystatechange = function () {
-				switch (x.readyState) {
-					case 2: // HEADERS_RECEIVED
-						diff = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - lastChangeTime;
-						lastChangeTime = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp();
-						info += diff + "::";
-						break;
+		x.onerror = () => {
+			handleSingleResult(address, __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - startTime, resultMsgError);
+		};
 
-					case 3: // LOADING
-						diff = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - lastChangeTime;
-						lastChangeTime = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp();
-						info += diff + "::";
-						break;
+		x.ontimeout = () => {
+			handleSingleResult(address, __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - startTime, resultMsgTimeout);
+		};
 
-					case 4: // DONE
-						diff = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - lastChangeTime;
-						lastChangeTime = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp();
-						info += diff;
+		x.onload = () => {
+			handleSingleResult(address, __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - startTime, resultMsgData);
+		};
 
-						var timing = lastChangeTime - startTime;
-						handleSingleResult(address, timing, info);
-						break;
+		startTime = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp();
 
-					default:
-						/* we don't care about other states (OPENED, UNSENT) */
-						break;
-				}
-			};
-
-			startTime = lastChangeTime = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp();
-
-			x.open("HEAD", address, true);
-			x.send();
-		}
-		catch (err) {
-			//console.log(err);
-			handleSingleResult(address, 0, resultMsgError + " (" + err.toString() + ")");
-		}
+		x.open("HEAD", address, true);
+		x.send();
 	}
 
 
@@ -333,14 +311,14 @@ class NetScan {
 	 * @param {String} iprange A range of ips.
 	 * @param {Function} scanFinishedCB The callback which gets the results.
 	 * 		Array results Containing result objects for each address.
-	 **/
+	 */
 	static getHostsXHR(iprange, scanFinishedCB) {
-		var results = [];
-		var protocol = "http://";
-		var addresses = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].ipRangeToArray(iprange);
+		const results = [];
+		const protocol = "http://";
+		const addresses = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].ipRangeToArray(iprange);
 
 		function handleSingleResult(address, timing, info) {
-			var status = timing < timingLowerBound || timing > timingUpperBound ? "up" : "down";
+			const status = timing < timingLowerBound || timing > timingUpperBound ? "up" : "down";
 			results.push(new __WEBPACK_IMPORTED_MODULE_2_ScanResult__["a" /* default */](
 				address,
 				timing,
@@ -351,16 +329,16 @@ class NetScan {
 			/* last result received, return */
 			if (results.length === addresses.length) {
 				/* check if we can add some additional info of perf timing API */
-				NetScan.updateResultsWithPerfTimingData(results, "up");
+				NetScan._updateResultsWithPerfTimingData(results, "up");
 
 				scanFinishedCB(results);
 			}
 		}
 
 		/* clear all perftiming entries for reliable results */
-		NetScan.clearPerfTimingData();
+		NetScan._clearPerfTimingData();
 
-		for (var i = 0; i < addresses.length; i++) {
+		for (let i = 0; i < addresses.length; i++) {
 			NetScan.createConnectionXHR(protocol + addresses[i], handleSingleResult);
 		}
 	}
@@ -377,12 +355,12 @@ class NetScan {
 	 *			changes and other interesting details.
 	 * @param {Number} connectionTimeout The time in milliseconds after which 
 	 * the connection will be forcefully closed.
-	 **/
+	 */
 	static createConnectionWS(address, handleSingleResult, connectionTimeout = wsoTimeout) {
-		var startTime = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp();
+		const startTime = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp();
 		var wsResult = false;
-		var timeout,
-			ws;
+		var timeout;
+		var ws;
 
 		function onresult(address, timing, info) {
 			if (!wsResult) {
@@ -419,8 +397,10 @@ class NetScan {
 
 			socketPool.push(ws);
 
-			/* trigger a manual close after some time, identified by "code" and "reason"
-			 * https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent#Status_codes */
+			/** 
+			 * trigger a manual close after some time, identified by "code" and "reason"
+			 * https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent#Status_codes 
+			 */
 			timeout = setTimeout(function () {
 				ws.close(4999, resultMsgTimeout);
 			}, connectionTimeout);
@@ -450,13 +430,15 @@ class NetScan {
 	 * @param {String} iprange A range of ips.
 	 * @param {Function} scanFinishedCB The callback which gets the results.
 	 * 		Array results Containing result objects for each address.
-	 **/
+	 */
 	static getHostsWS(iprange, scanFinishedCB) {
-		/* create a connection pool, browsers only support a certain limit of
-		 * simultaneous connections for websockets (ff ~200) */
-		var results = [];
-		var protocol = "ws://";
-		var ips = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].ipRangeToArray(iprange);
+		/** 
+		 * create a connection pool, browsers only support a certain limit of
+		 * simultaneous connections for websockets (ff ~200) 
+		 */
+		const results = [];
+		const protocol = "ws://";
+		const ips = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].ipRangeToArray(iprange);
 
 		function handleSingleResult(address, timing, info) {
 			var status = timing < timingLowerBound || timing > timingUpperBound ? "up" : "down";
@@ -474,10 +456,10 @@ class NetScan {
 		}
 
 		/* clear all perftiming entries for reliable results */
-		NetScan.clearPerfTimingData();
+		NetScan._clearPerfTimingData();
 
 		/* initially fill pool */
-		for (var i = 0; i < poolCap && ips.length > 0; i++) {
+		for (let i = 0; i < poolCap && ips.length > 0; i++) {
 			NetScan.createConnectionWS(protocol + ips.shift(), handleSingleResult);
 		}
 
@@ -488,7 +470,7 @@ class NetScan {
 				clearInterval(poolMonitor);
 
 				/* check if we can add some additional info of perf timing API */
-				NetScan.updateResultsWithPerfTimingData(results, "up");
+				NetScan._updateResultsWithPerfTimingData(results, "up");
 
 				scanFinishedCB(results);
 			}
@@ -513,28 +495,28 @@ class NetScan {
 	 *			changes and other interesting details.
 	 * @param {Number} connectionTimeout The time in milliseconds after which 
 	 * the connection will be forcefully closed.
-	 **/
+	 */
 	static createConnectionFetch(address, handleSingleResult, connectionTimeout = fetchTimeout) {
-		var config = {
+		const config = new Request(address, {
 			method: "GET",
 			/**	
-			 *	This will make an "opaque" request, such that CORS requests 
-			 * 	will succeed even if there is no "CORS header". The response gets
-			 *	"nulled", but we will know when HTTP is understood by the remote host.
-			 **/
+			 * This will make an "opaque" request, such that CORS requests 
+			 * will succeed even if there is no "CORS header". The response gets
+			 * "nulled", but we will know when HTTP is understood by the remote host.
+			 */
 			mode: "no-cors",
 			/* Always make a "new / real" request, don't use possibly cached versions. */
 			cache: "no-store"
-		};
-		var startTime = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp();
+		});
+		const startTime = __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp();
 
-		var timeout = new Promise((resolve, reject) => {
+		const timeout = new Promise((resolve, reject) => {
 			setTimeout(() => reject(new Error(resultMsgTimeout)), connectionTimeout);
 		});
 
-		var requ = fetch(address, config);
+		const requ = fetch(config);
 
-		var p = Promise.race([timeout, requ]);
+		const p = Promise.race([timeout, requ]);
 		p.then((/* resp */) => {
 			// console.log(resp.headers);
 			// console.log(resp.type, resp.ok, resp.status, resp.statusText);
@@ -542,15 +524,14 @@ class NetScan {
 			// 	console.log(body);
 			// });
 			handleSingleResult(address, __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - startTime, resultMsgData);
-		})
-			.catch(/* TypeError */ err => {
-				if (err.message === resultMsgTimeout) {
-					handleSingleResult(address, __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - startTime, resultMsgTimeout);
-				}
-				else {
-					handleSingleResult(address, __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - startTime, resultMsgError + " (" + err.toString() + ")");
-				}
-			});
+		}).catch(/* TypeError */ err => {
+			if (err.message === resultMsgTimeout) {
+				handleSingleResult(address, __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - startTime, resultMsgTimeout);
+			}
+			else {
+				handleSingleResult(address, __WEBPACK_IMPORTED_MODULE_0_Timer__["a" /* default */].getTimestamp() - startTime, resultMsgError);
+			}
+		});
 	}
 
 
@@ -560,12 +541,12 @@ class NetScan {
 	 * as soon as the scan process has finished.
 	 * @param {String} iprange A range of ips.
 	 * @param {Function} scanFinishedCB The callback which gets the results.
-	 * 		Array results Containing result objects for each address.
-	 **/
+	 *        {Array} results Containing result objects for each address.
+	 */
 	static getHostsFetch(iprange, scanFinishedCB) {
-		var results = [];
-		var protocol = "http://";
-		var addresses = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].ipRangeToArray(iprange);
+		const results = [];
+		const protocol = "http://";
+		const addresses = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].ipRangeToArray(iprange);
 
 		function handleSingleResult(address, timing, info) {
 			var status = timing < timingLowerBound || timing > timingUpperBound ? "up" : "down";
@@ -584,16 +565,16 @@ class NetScan {
 			/* last result received, return */
 			if (results.length === addresses.length) {
 				/* check if we can add some additional info of perf timing API */
-				NetScan.updateResultsWithPerfTimingData(results, "up");
+				NetScan._updateResultsWithPerfTimingData(results, "up");
 
 				scanFinishedCB(results);
 			}
 		}
 
 		/* clear all perftiming entries for reliable results */
-		NetScan.clearPerfTimingData();
+		NetScan._clearPerfTimingData();
 
-		for (var i = 0; i < addresses.length; i++) {
+		for (let i = 0; i < addresses.length; i++) {
 			NetScan.createConnectionFetch(protocol + addresses[i], handleSingleResult);
 		}
 	}
@@ -610,11 +591,11 @@ class NetScan {
 	 *			changes and other interesting details.
 	 * @param {Number} connectionTimeout The time in milliseconds after which 
 	 * the connection will be forcefully closed.
-	 **/
+	 */
 	static createConnectionHTML(address, handleSingleResult, connectionTimeout = htmlTimeout) {
-		var request = new Image();
-		var timeout,
-			startTime;
+		const request = new Image();
+		var timeout;
+		var startTime;
 
 		request.onerror = function (/* evt */) {
 			clearTimeout(timeout);
@@ -646,11 +627,11 @@ class NetScan {
 	 * @param {String} iprange A range of ips.
 	 * @param {Function} scanFinishedCB The callback which gets the results.
 	 * 		Array results Containing result objects for each address.
-	 **/
+	 */
 	static getHostsHTML(iprange, scanFinishedCB) {
-		var results = [];
-		var protocol = "http://";
-		var addresses = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].ipRangeToArray(iprange);
+		const results = [];
+		const protocol = "http://";
+		const addresses = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].ipRangeToArray(iprange);
 		/* Needed because we can only make a very small amount of simultaneous requests... */
 		var concurrentRequests = 0;
 		var requestsMade = 0;
@@ -673,14 +654,14 @@ class NetScan {
 			/* last result received, return */
 			if (results.length === addresses.length) {
 				/* check if we can add some additional info of perf timing API */
-				NetScan.updateResultsWithPerfTimingData(results, "up");
+				NetScan._updateResultsWithPerfTimingData(results, "up");
 
 				scanFinishedCB(results);
 			}
 		}
 
 		/* clear all perftiming entries for reliable results */
-		NetScan.clearPerfTimingData();
+		NetScan._clearPerfTimingData();
 
 		var requestMonitor = setInterval(function () {
 			if (requestsMade >= addresses.length) {
@@ -708,12 +689,12 @@ class NetScan {
 	 * @param {Function} scanFunction (optional) One of the available functions
 	 * 		for scanning an iprange can be provided. The default is the function using 
 	 * 		the fetch API.
-	 **/
+	 */
 	static getHostsLocalNetwork(scanFinishedCB, scanFunction = NetScan.getHostsFetch) {
 		NetScan.getHostIps(function (ips) {
-			var toTest = {};
-			var testCount = 0,
-				testedCount = 0;
+			const toTest = {};
+			var testCount = 0;
+			var testedCount = 0;
 			var all = [];
 
 			function resultAccumulator(res) {
@@ -724,18 +705,18 @@ class NetScan {
 				}
 			}
 
-			for (var i = 0; i < ips.length; i++) {
+			for (let i = 0; i < ips.length; i++) {
 				if (toTest[ips[i].ip] === undefined) {
 					toTest[ips[i].ip] = true;
 					testCount++;
 				}
 			}
 
-			for (var ip in toTest) {
-				var tip = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].ipToArray(ip);
+			for (let ip in toTest) {
+				const tip = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].ipToArray(ip);
 				tip[3] = "0-255";
-				tip = tip.join(".");
-				scanFunction(tip, resultAccumulator);
+				const range = tip.join(".");
+				scanFunction(range, resultAccumulator);
 			}
 		});
 	}
@@ -755,7 +736,7 @@ class NetScan {
 	 * as argument to the callback.
 	 * @param {Function} scanFunction One of the 'createConnection*'-functions which will be
 	 * used to perform the scan on each individual port. The default is createConnectionFetch.
-	 **/
+	 */
 	static getPorts(host, portrange, scanFinishedCB, scanFunction = NetScan.createConnectionFetch) {
 		var ports = __WEBPACK_IMPORTED_MODULE_1_Util__["a" /* default */].portStringToArray(portrange);
 		/** 
@@ -775,8 +756,8 @@ class NetScan {
 		 * 		https://dxr.mozilla.org/mozilla-central/search?q=%2Boverrides%3A%22nsIProtocolHandler%3A%3AAllowPort%28int32_t%2C+const+char+*%2C+bool+*%29%22
 		 * Still there is the possibility that the ftp protocol will be removed (at least from chrome/ium),
 		 * see: https://bugs.chromium.org/p/chromium/issues/detail?id=333943
-		 **/
-		var blocked = [
+		 */
+		const blocked = [
 			1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37,
 			42, 43, 53, 77, 79, 87, 95, 101, 102, 103, 104, 109,
 			110, 111, 113, 115, 117, 119, 123, 135, 139, 143, 179,
@@ -785,13 +766,13 @@ class NetScan {
 			6000, 6665, 6666, 6667, 6668, 6669
 		];
 
-		var results = [];
+		const results = [];
 
 		/* clear all perftiming entries for reliable results */
-		NetScan.clearPerfTimingData();
+		NetScan._clearPerfTimingData();
 
-		for (var i = 0; i < ports.length; i++) {
-			var url = "http://" + host + ":" + ports[i];
+		for (let i = 0; i < ports.length; i++) {
+			let url = "http://" + host + ":" + ports[i];
 			if (blocked.indexOf(ports[i]) !== -1) {
 				/* exception which can be resolved by ftp */
 				if (ports[i] === 21 || ports[i] === 22) {
@@ -843,7 +824,7 @@ class NetScan {
 		 * 								timing entry check possible 
 		 * [+] port instaclose no msg:	returns very fast, perf timing entry check possible
 		 * [+] port instaclose w/ msg:	returns very fast, perf timing entry check possible 
-		 **/
+		 */
 		function onResult(address, timing, info) {
 			var status = "???";
 
@@ -875,7 +856,7 @@ class NetScan {
 
 			if (results.length === ports.length) {
 				/* check if we can add some additional info of perf timing API */
-				NetScan.updateResultsWithPerfTimingData(results, "open");
+				NetScan._updateResultsWithPerfTimingData(results, "open");
 
 				scanFinishedCB(results);
 			}
@@ -893,7 +874,7 @@ class NetScan {
 	 * @param {String} statusNew The new status that will be set when data can be 
 	 * associated with a scan result.
 	 */
-	static updateResultsWithPerfTimingData(results, statusNew) {
+	static _updateResultsWithPerfTimingData(results, statusNew) {
 		/**
 		 * differences in chrome: currently no entries for failed resources, see:
 		 * https://bugs.chromium.org/p/chromium/issues/detail?id=460879
@@ -902,7 +883,7 @@ class NetScan {
 			return;
 		}
 
-		var connections = performance.getEntriesByType("resource").filter((entry) => {
+		const connections = performance.getEntriesByType("resource").filter((entry) => {
 			/* this is no longer valid... */
 			//return entry.duration !== 0;
 
@@ -923,9 +904,9 @@ class NetScan {
 			return entry.fetchStart !== entry.responseEnd;
 		});
 
-		for (var i = 0; i < connections.length; i++) {
-			for (var j = 0; j < results.length; j++) {
-				var entryName = connections[i].name;
+		for (let i = 0; i < connections.length; i++) {
+			for (let j = 0; j < results.length; j++) {
+				let entryName = connections[i].name;
 				/* trim trailing slash */
 				entryName = entryName.replace(/\/$/, "");
 				/** 
@@ -933,13 +914,13 @@ class NetScan {
 				 * ftp addresses dont get an entry, so we just replace everything with http
 				 * ...for now
 				 */
-				var resultAddr = results[j].address.replace(/^.+?:\/\//, "http://")
+				const resultAddr = results[j].address.replace(/^.+?:\/\//, "http://")
 					/* trim trailing slash */
 					.replace(/\/$/, "");
 
 				if (entryName === resultAddr) {
 					results[j].status = statusNew;
-					results[j].info += "; " + resultMsgPerfTiming;
+					results[j].info += ", " + resultMsgPerfTiming;
 					break;
 				}
 			}
@@ -949,7 +930,7 @@ class NetScan {
 	/**
 	 * Purges the perfomance timing records of type "resource".
 	 */
-	static clearPerfTimingData() {
+	static _clearPerfTimingData() {
 		performance.clearResourceTimings();
 	}
 
@@ -983,18 +964,18 @@ class Util {
 		 * 2 1 UDP 25108223 	237.30.30.30 58779 typ relay raddr   47.61.61.61 rport 54761
 		 * 0 			1 					UDP 				2122252543 		192.168.2.108 		52229 		typ host
 		 * candidate | rtp (1)/rtcp (2) | protocol (udp/tcp) | priority 	| ip				| port		| type (host/srflx/relay)
-		 **/
-		var host = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate);
+		 */
+		const host = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate);
 		if (host !== null && host.length === 3) {
 			return { type: "host", ip: host[1], port: host[2], public_ip: null, public_port: null };
 		}
 
-		var srflx = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ srflx raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
+		const srflx = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ srflx raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
 		if (srflx !== null && srflx.length === 5) {
 			return { type: "srflx", ip: srflx[3], port: srflx[4], public_ip: srflx[1], public_port: srflx[2] };
 		}
 
-		var relay = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ relay raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
+		const relay = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ relay raddr ((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
 		if (relay !== null && relay.length === 5) {
 			return { type: "relay", ip: relay[3], port: relay[4], public_ip: relay[1], public_port: relay[2] };
 		}
@@ -1011,11 +992,11 @@ class Util {
 	 * @return The replaced string.
 	 */
 	static replaceConnectionInfo(candidate, replacement) {
-		var m = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate)
+		const m = /((?:\d{1,3}\.){3}\d{1,3}) (\d{1,5}) typ host/.exec(candidate)
 			|| /((?:\d{1,3}\.){3}\d{1,3}) rport (\d{1,5})/.exec(candidate);
 
 		if (m !== null) {
-			var t = candidate.replace(m[1], replacement.ip);
+			let t = candidate.replace(m[1], replacement.ip);
 			t = t.replace(m[2], replacement.port);
 			return t;
 		}
@@ -1039,7 +1020,7 @@ class Util {
 	 * @return {Array} of ip strings.
 	 */
 	static ipRangeToArray(iprange) {
-		var ranges = [];
+		const ranges = [];
 		iprange.split(".").map(function (elem) {
 			if (elem.indexOf("-") !== -1) {
 				ranges.push(elem.split("-").map(Number));
@@ -1050,11 +1031,11 @@ class Util {
 			}
 		});
 
-		var ips = [];
-		for (var i = ranges[0][0]; i <= ranges[0][1]; i++) {
-			for (var j = ranges[1][0]; j <= ranges[1][1]; j++) {
-				for (var k = ranges[2][0]; k <= ranges[2][1]; k++) {
-					for (var l = ranges[3][0]; l <= ranges[3][1]; l++) {
+		const ips = [];
+		for (let i = ranges[0][0]; i <= ranges[0][1]; i++) {
+			for (let j = ranges[1][0]; j <= ranges[1][1]; j++) {
+				for (let k = ranges[2][0]; k <= ranges[2][1]; k++) {
+					for (let l = ranges[3][0]; l <= ranges[3][1]; l++) {
 						ips.push([i, j, k, l].join("."));
 					}
 				}
@@ -1072,10 +1053,10 @@ class Util {
 	 */
 	static portRangeToArray(portrange) {
 		if (portrange.indexOf("-") !== -1) {
-			var range = portrange.split("-").map(Number);
+			const range = portrange.split("-").map(Number);
 
-			var ports = [];
-			for (var i = range[0]; i <= range[1]; i++) {
+			const ports = [];
+			for (let i = range[0]; i <= range[1]; i++) {
 				ports.push(i);
 			}
 
@@ -1096,7 +1077,7 @@ class Util {
 	 */
 	static portStringToArray(portstring) {
 		if (portstring.indexOf(",") !== -1) {
-			var ports = [];
+			let ports = [];
 			portstring.split(",").map((val) => {
 				ports = ports.concat(Util.portRangeToArray(val));
 			});
